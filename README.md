@@ -3,7 +3,7 @@
 Głosowy asystent do notatek i list. React Native + Expo + Supabase.
 
 ## Stack
-- Expo SDK 55 (React Native)
+- Expo SDK 54 (React Native)
 - Supabase (baza + auth + sync)
 - whisper.rn (STT offline)
 - expo-speech (TTS)
