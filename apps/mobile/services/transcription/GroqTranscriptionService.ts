@@ -1,4 +1,5 @@
-import * as FileSystem from 'expo-file-system'
+import { fetch } from 'expo/fetch'
+import { File } from 'expo-file-system'
 import { TranscriptionService, TranscriptionResult } from './TranscriptionService'
 
 export class GroqTranscriptionService implements TranscriptionService {
@@ -16,33 +17,33 @@ export class GroqTranscriptionService implements TranscriptionService {
 
   async transcribe(audioUri: string): Promise<TranscriptionResult> {
     try {
-      const uploadResult = await FileSystem.uploadAsync(
+      const audioFile = new File(audioUri)
+
+      const formData = new FormData()
+      formData.append('file', audioFile)
+      formData.append('model', this.model)
+      formData.append('language', 'pl')
+      formData.append('response_format', 'json')
+
+      const response = await fetch(
         'https://api.groq.com/openai/v1/audio/transcriptions',
-        audioUri,
         {
-          httpMethod: 'POST',
-          uploadType: FileSystem.FileSystemUploadType.MULTIPART,
-          fieldName: 'file',
-          mimeType: 'audio/m4a',
-          parameters: {
-            model: this.model,
-            language: 'pl',
-            response_format: 'json',
-          },
+          method: 'POST',
           headers: {
             Authorization: `Bearer ${this.apiKey}`,
           },
+          body: formData,
         }
       )
 
-      const response = JSON.parse(uploadResult.body)
+      const data = await response.json()
 
-      if (uploadResult.status !== 200) {
-        console.warn('Groq error:', response)
-        return { text: '', error: response?.error?.message ?? 'Błąd API' }
+      if (!response.ok) {
+        console.warn('Groq error:', data)
+        return { text: '', error: data?.error?.message ?? 'Błąd API' }
       }
 
-      return { text: response.text?.trim() ?? '', language: 'pl' }
+      return { text: data.text?.trim() ?? '', language: 'pl' }
     } catch (e: any) {
       console.warn('GroqTranscriptionService error:', e)
       return { text: '', error: e.message }

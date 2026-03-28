@@ -4,22 +4,21 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Mic, MicOff, Loader } from 'lucide-react-native'
 import { useWhisperStore } from '../../store/whisperStore'
 import { useNotesStore } from '../../store/notesStore'
-
+import { useAudioRecorder, RecordingPresets, setAudioModeAsync } from 'expo-audio'
 const { width } = Dimensions.get('window')
 const BTN_SIZE = width * 0.38
 
 export default function HomeScreen() {
   const [listening, setListening] = useState(false)
   const [status, setStatus] = useState('Naciśnij aby mówić')
-  const lastTranscript = useRef<string>('')
-  const { ready, initModel, startRealtime, stopRealtime, transcribing } = useWhisperStore()
+  const { transcribing, transcribe } = useWhisperStore()
+const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY)
   const { addNote } = useNotesStore()
 
   const pulse1 = useRef(new Animated.Value(1)).current
   const pulse2 = useRef(new Animated.Value(1)).current
   const pulse3 = useRef(new Animated.Value(1)).current
 
-  useEffect(() => { initModel() }, [])
 
   useEffect(() => {
     if (!listening) {
@@ -123,9 +122,6 @@ export default function HomeScreen() {
         </Pressable>
       </View>
 
-      {!ready && (
-        <Text style={s.loading}>Ładowanie modelu głosowego...</Text>
-      )}
     </SafeAreaView>
   )
 }
