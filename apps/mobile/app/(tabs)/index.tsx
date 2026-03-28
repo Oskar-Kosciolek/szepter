@@ -105,25 +105,39 @@ const parseCommand = async (text: string) => {
     }
 
     case 'add_to_list': {
-      const { lists, createList, addItem, fetchLists } = useListsStore.getState()
-      const listName = command.payload?.listName ?? 'domyślna'
-      const content = command.payload?.content ?? ''
+  const { lists, createList, addItem, fetchLists } = useListsStore.getState()
+  const listName = command.payload?.listName ?? 'domyślna'
+  const content = command.payload?.content ?? ''
 
-      await fetchLists()
-      let list = useListsStore.getState().lists.find(
-        l => l.title.toLowerCase().includes(listName.toLowerCase())
-      )
+  await fetchLists()
+  let list = useListsStore.getState().lists.find(
+    l => l.title.toLowerCase().includes(listName.toLowerCase())
+  )
 
-      if (!list) {
-        list = await createList(listName) ?? undefined
-      }
+  if (!list) {
+    list = await createList(listName) ?? undefined
+  }
 
-      if (list && content) {
-        await addItem(list.id, content)
-        setStatus(`Dodano "${content}" do listy "${list.title}" ✓`)
-      }
-      break
+  if (list && content) {
+    // Rozbij po przecinku i dodaj każdy element osobno
+    const items = content
+      .split(',')
+      .map((item: string) => item.trim())
+      .filter((item: string) => item.length > 0)
+
+    for (const item of items) {
+      await addItem(list.id, item)
     }
+
+    const count = items.length
+    setStatus(
+      count === 1
+        ? `Dodano "${items[0]}" do listy "${list.title}" ✓`
+        : `Dodano ${count} elementy do listy "${list.title}" ✓`
+    )
+  }
+  break
+}
 
     case 'delete_last_note':
       const { notes, deleteNote } = useNotesStore.getState()
