@@ -1,98 +1,79 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { useState, useEffect, useRef } from 'react'
+import { View, Text, Pressable, Animated, StyleSheet, Dimensions } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
+import { Mic, MicOff } from 'lucide-react-native'
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+const { width } = Dimensions.get('window')
+const BTN_SIZE = width * 0.38
 
 export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+  const [listening, setListening] = useState(false)
+  const pulse1 = useRef(new Animated.Value(1)).current
+  const pulse2 = useRef(new Animated.Value(1)).current
+  const pulse3 = useRef(new Animated.Value(1)).current
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
-  );
+  useEffect(() => {
+    if (!listening) {
+      pulse1.setValue(1)
+      pulse2.setValue(1)
+      pulse3.setValue(1)
+      return
+    }
+
+    const animate = (anim: Animated.Value, delay: number) =>
+      Animated.loop(
+        Animated.sequence([
+          Animated.delay(delay),
+          Animated.timing(anim, { toValue: 1.6, duration: 900, useNativeDriver: true }),
+          Animated.timing(anim, { toValue: 1,   duration: 900, useNativeDriver: true }),
+        ])
+      ).start()
+
+    animate(pulse1, 0)
+    animate(pulse2, 300)
+    animate(pulse3, 600)
+  }, [listening])
+
+  return (
+    <SafeAreaView style={s.container}>
+      <Text style={s.title}>Szepter</Text>
+      <Text style={s.subtitle}>
+        {listening ? 'Słucham...' : 'Naciśnij aby mówić'}
+      </Text>
+
+      <View style={s.btnWrap}>
+        {[pulse1, pulse2, pulse3].map((anim, i) => (
+          <Animated.View
+            key={i}
+            style={[s.ring, { transform: [{ scale: anim }], opacity: listening ? 0.15 - i * 0.04 : 0 }]}
+          />
+        ))}
+
+        <Pressable
+          onPress={() => setListening(v => !v)}
+          style={[s.btn, listening && s.btnActive]}
+        >
+          {listening
+            ? <MicOff size={BTN_SIZE * 0.38} color="#fff" />
+            : <Mic     size={BTN_SIZE * 0.38} color="#fff" />
+          }
+        </Pressable>
+      </View>
+
+      <Text style={s.hint}>
+        {listening ? 'Powiedz np. "Zapisz pomysł..."' : ''}
+      </Text>
+    </SafeAreaView>
+  )
 }
 
-const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
-});
+const s = StyleSheet.create({
+  container:  { flex: 1, backgroundColor: '#0a0a0a', alignItems: 'center', justifyContent: 'center' },
+  title:      { fontSize: 32, fontWeight: '300', color: '#fff', letterSpacing: 8, marginBottom: 8 },
+  subtitle:   { fontSize: 14, color: '#666', marginBottom: 60, letterSpacing: 2 },
+  btnWrap:    { width: BTN_SIZE * 1.8, height: BTN_SIZE * 1.8, alignItems: 'center', justifyContent: 'center' },
+  ring:       { position: 'absolute', width: BTN_SIZE, height: BTN_SIZE, borderRadius: BTN_SIZE, backgroundColor: '#a78bfa' },
+  btn:        { width: BTN_SIZE, height: BTN_SIZE, borderRadius: BTN_SIZE, backgroundColor: '#1a1a1a', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#2a2a2a' },
+  btnActive:  { backgroundColor: '#4c1d95', borderColor: '#7c3aed' },
+  hint:       { position: 'absolute', bottom: 120, fontSize: 13, color: '#555', letterSpacing: 1 },
+})
