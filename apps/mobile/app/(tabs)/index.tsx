@@ -5,6 +5,8 @@ import { Mic, MicOff, Loader } from 'lucide-react-native'
 import { useWhisperStore } from '../../store/whisperStore'
 import { useNotesStore } from '../../store/notesStore'
 import { commandParser } from '../../services/commandParser'
+import { useListsStore } from '../../store/listsStore'
+import { router } from 'expo-router'
 import { useAudioRecorder, RecordingPresets, setAudioModeAsync } from 'expo-audio'
 const { width } = Dimensions.get('window')
 const BTN_SIZE = width * 0.38
@@ -91,16 +93,37 @@ const parseCommand = async (text: string) => {
       Alert.alert('Notatki', 'TTS będzie tutaj wkrótce 🎙️')
       break
 
-    case 'create_list':
-      // placeholder — ekran list wkrótce
-      setStatus(`Tworzę listę "${command.payload?.listName}"...`)
-      Alert.alert('Lista', `Tworzenie listy "${command.payload?.listName}" wkrótce!`)
+    case 'create_list': {
+      const { createList } = useListsStore.getState()
+      const listName = command.payload?.listName ?? 'nowa lista'
+      const newList = await createList(listName)
+      if (newList) {
+        setStatus(`Utworzono listę "${listName}" ✓`)
+        router.push(`/list/${newList.id}?title=${encodeURIComponent(listName)}`)
+      }
       break
+    }
 
-    case 'add_to_list':
-      setStatus(`Dodaję do listy "${command.payload?.listName}"...`)
-      Alert.alert('Lista', `Dodawanie do listy wkrótce!`)
+    case 'add_to_list': {
+      const { lists, createList, addItem, fetchLists } = useListsStore.getState()
+      const listName = command.payload?.listName ?? 'domyślna'
+      const content = command.payload?.content ?? ''
+
+      await fetchLists()
+      let list = useListsStore.getState().lists.find(
+        l => l.title.toLowerCase().includes(listName.toLowerCase())
+      )
+
+      if (!list) {
+        list = await createList(listName) ?? undefined
+      }
+
+      if (list && content) {
+        await addItem(list.id, content)
+        setStatus(`Dodano "${content}" do listy "${list.title}" ✓`)
+      }
       break
+    }
 
     case 'delete_last_note':
       const { notes, deleteNote } = useNotesStore.getState()
