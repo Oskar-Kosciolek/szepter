@@ -1,66 +1,60 @@
 import { create } from 'zustand'
-import { Audio } from 'expo-av'
 import { initWhisper, WhisperContext } from 'whisper.rn'
+import * as FileSystem from 'expo-file-system'
+import { Asset } from 'expo-asset'
 
 type WhisperStore = {
   whisper: WhisperContext | null
-  recording: Audio.Recording | null
   transcribing: boolean
   ready: boolean
   initModel: () => Promise<void>
-  startRecording: () => Promise<void>
-  stopRecording: () => Promise<string | null>
+  transcribe: (uri: string) => Promise<string | null>
 }
 
 export const useWhisperStore = create<WhisperStore>((set, get) => ({
   whisper: null,
-  recording: null,
   transcribing: false,
   ready: false,
 
   initModel: async () => {
-    const { whisper } = get()
-    if (whisper) return
+    if (get().whisper) return
 
     try {
-        const ctx = await initWhisper({
-        filePath: require('../assets/ggml-small.bin'),
+      const modelPath = `${FileSystem.documentDirectory}ggml-small.bin`
+      const fileInfo = await FileSystem.getInfoAsync(modelPath)
+
+      if (!fileInfo.exists) {
+        console.log('Kopiuję model...')
+        const asset = Asset.fromModule(require('../assets/ggml-small.bin'))
+        await asset.downloadAsync()
+        await FileSystem.copyAsync({
+          from: asset.localUri!,
+          to: modelPath,
         })
-        set({ whisper: ctx, ready: true })
+      }
+
+      const ctx = await initWhisper({ filePath: modelPath })
+      set({ whisper: ctx, ready: true })
+      console.log('Model gotowy!')
     } catch (e) {
-        console.warn('Whisper model nie znaleziony:', e)
-        set({ ready: false })
+      console.warn('Błąd ładowania modelu:', e)
+      set({ ready: false })
     }
-    },
-
-  startRecording: async () => {
-    await Audio.requestPermissionsAsync()
-    await Audio.setAudioModeAsync({
-      allowsRecordingIOS: true,
-      playsInSilentModeIOS: true,
-    })
-
-    const { recording } = await Audio.Recording.createAsync(
-      Audio.RecordingOptionsPresets.HIGH_QUALITY
-    )
-    set({ recording })
   },
 
-  stopRecording: async () => {
-    const { recording, whisper } = get()
-    if (!recording || !whisper) return null
+  transcribe: async (uri: string) => {
+    const { whisper } = get()
+    if (!whisper) return null
 
-    await recording.stopAndUnloadAsync()
-    const uri = recording.getURI()
-    set({ recording: null, transcribing: true })
-
-    if (!uri) return null
-
-    const { result } = await whisper.transcribe(uri, {
-      language: 'pl',
-    })
-
-    set({ transcribing: false })
-    return result
+    set({ transcribing: true })
+    try {
+      const { result } = await whisper.transcribe(uri, { language: 'pl' })
+      return result
+    } catch (e) {
+      console.warn('Błąd transkrypcji:', e)
+      return null
+    } finally {
+      set({ transcribing: false })
+    }
   },
 }))

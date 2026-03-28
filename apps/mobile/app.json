@@ -2,10 +2,13 @@
   "expo": {
     "name": "Szepter",
     "slug": "szepter",
+    "scheme": "szepter",
     "version": "1.0.0",
+    "assets": [
+      "./assets/ggml-small.bin"
+    ],
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "szepter",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -40,7 +43,9 @@
           }
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      "expo-asset",
+      "expo-audio"
     ],
     "experiments": {
       "typedRoutes": true,

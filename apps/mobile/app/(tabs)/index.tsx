@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { View, Text, Pressable, Animated, StyleSheet, Dimensions, Alert } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { Mic, MicOff } from 'lucide-react-native'
+import { Mic, MicOff, Loader } from 'lucide-react-native'
+import { useAudioRecorder, AudioModule, RecordingPresets } from 'expo-audio'
 import { useWhisperStore } from '../../store/whisperStore'
 import { useNotesStore } from '../../store/notesStore'
 
@@ -11,13 +12,20 @@ const BTN_SIZE = width * 0.38
 export default function HomeScreen() {
   const [listening, setListening] = useState(false)
   const [status, setStatus] = useState('Naciśnij aby mówić')
-  const { ready, initModel, startRecording, stopRecording, transcribing } = useWhisperStore()
+  const { ready, initModel, transcribe, transcribing } = useWhisperStore()
   const { addNote } = useNotesStore()
+  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY)
+
   const pulse1 = useRef(new Animated.Value(1)).current
   const pulse2 = useRef(new Animated.Value(1)).current
   const pulse3 = useRef(new Animated.Value(1)).current
 
   useEffect(() => { initModel() }, [])
+
+  useEffect(() => {
+    // Poproś o uprawnienia do mikrofonu
+    AudioModule.requestRecordingPermissionsAsync()
+  }, [])
 
   useEffect(() => {
     if (!listening) {
@@ -42,23 +50,31 @@ export default function HomeScreen() {
 
   const handlePress = async () => {
     if (!ready) {
-      Alert.alert(
-        'Model niedostępny',
-        'Model głosowy nie jest załadowany. Sprawdź czy plik ggml-small.bin znajduje się w assets.'
-      )
+      Alert.alert('Model niedostępny', 'Model głosowy jeszcze się ładuje, spróbuj za chwilę.')
       return
     }
 
     if (!listening) {
+      // Start nagrywania
+      await recorder.record()
       setListening(true)
       setStatus('Słucham...')
-      await startRecording()
     } else {
+      // Stop nagrywania
+      await recorder.stop()
       setListening(false)
       setStatus('Przetwarzam...')
-      const transcript = await stopRecording()
 
-      if (transcript) {
+      const uri = recorder.uri
+      if (!uri) {
+        setStatus('Błąd nagrywania')
+        setTimeout(() => setStatus('Naciśnij aby mówić'), 2000)
+        return
+      }
+
+      const transcript = await transcribe(uri)
+
+      if (transcript?.trim()) {
         setStatus(`"${transcript}"`)
         await parseCommand(transcript)
       } else {
@@ -76,14 +92,17 @@ export default function HomeScreen() {
       await addNote(text)
       setStatus('Zapisano notatkę ✓')
     } else {
-      Alert.alert('Nie rozpoznano komendy', `Usłyszałem: "${text}"\n\nSpróbuj powiedzieć np. "Zapisz pomysł..."`)
+      Alert.alert(
+        'Nie rozpoznano komendy',
+        `Usłyszałem: "${text}"\n\nSpróbuj powiedzieć np. "Zapisz pomysł..."`
+      )
     }
   }
 
   return (
     <SafeAreaView style={s.container}>
       <Text style={s.title}>Szepter</Text>
-      <Text style={s.subtitle}>{status}</Text>
+      <Text style={s.subtitle} numberOfLines={2}>{status}</Text>
 
       <View style={s.btnWrap}>
         {[pulse1, pulse2, pulse3].map((anim, i) => (
@@ -100,30 +119,20 @@ export default function HomeScreen() {
           style={[s.btn, listening && s.btnActive, transcribing && s.btnProcessing]}
           disabled={transcribing}
         >
-          {listening
-            ? <MicOff size={BTN_SIZE * 0.38} color="#fff" />
-            : <Mic size={BTN_SIZE * 0.38} color="#fff" />
+          {transcribing
+            ? <Loader size={BTN_SIZE * 0.38} color="#fff" />
+            : listening
+              ? <MicOff size={BTN_SIZE * 0.38} color="#fff" />
+              : <Mic size={BTN_SIZE * 0.38} color="#fff" />
           }
         </Pressable>
       </View>
 
       {!ready && (
-        <Text style={s.loading}>
-          {transcribing ? 'Przetwarzam...' : 'Model głosowy niedostępny'}
-        </Text>
+        <Text style={s.loading}>Ładowanie modelu głosowego...</Text>
       )}
     </SafeAreaView>
   )
 }
 
 const s = StyleSheet.create({
-  container:     { flex: 1, backgroundColor: '#0a0a0a', alignItems: 'center', justifyContent: 'center' },
-  title:         { fontSize: 32, fontWeight: '300', color: '#fff', letterSpacing: 8, marginBottom: 8 },
-  subtitle:      { fontSize: 14, color: '#666', marginBottom: 60, letterSpacing: 2, textAlign: 'center', paddingHorizontal: 40 },
-  btnWrap:       { width: BTN_SIZE * 1.8, height: BTN_SIZE * 1.8, alignItems: 'center', justifyContent: 'center' },
-  ring:          { position: 'absolute', width: BTN_SIZE, height: BTN_SIZE, borderRadius: BTN_SIZE, backgroundColor: '#a78bfa' },
-  btn:           { width: BTN_SIZE, height: BTN_SIZE, borderRadius: BTN_SIZE, backgroundColor: '#1a1a1a', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#2a2a2a' },
-  btnActive:     { backgroundColor: '#4c1d95', borderColor: '#7c3aed' },
-  btnProcessing: { backgroundColor: '#1a1a2e', borderColor: '#3730a3' },
-  loading:       { position: 'absolute', bottom: 120, fontSize: 13, color: '#555', letterSpacing: 1 },
-})
