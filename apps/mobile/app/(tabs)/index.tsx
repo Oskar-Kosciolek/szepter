@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Mic, MicOff, Loader } from 'lucide-react-native'
 import { useWhisperStore } from '../../store/whisperStore'
 import { useNotesStore } from '../../store/notesStore'
+import { commandParser } from '../../services/commandParser'
 import { useAudioRecorder, RecordingPresets, setAudioModeAsync } from 'expo-audio'
 const { width } = Dimensions.get('window')
 const BTN_SIZE = width * 0.38
@@ -73,25 +74,52 @@ const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY)
   }
 }
 
-  const parseCommand = async (text: string) => {
-    const lower = text.toLowerCase().trim()
 
-    if (
-      lower.includes('zapis') ||
-      lower.includes('notatka') ||
-      lower.includes('pomysł') ||
-      lower.includes('zapamiętaj') ||
-      lower.includes('dodaj')
-    ) {
-      await addNote(text)
+const parseCommand = async (text: string) => {
+  const command = await commandParser.parse(text)
+  console.log('komenda:', JSON.stringify(command))
+
+  switch (command.type) {
+    case 'save_note':
+      await addNote(command.payload?.content ?? text)
       setStatus('Zapisano notatkę ✓')
-    } else {
+      break
+
+    case 'read_notes':
+      // na razie placeholder — TTS dołożymy później
+      setStatus('Odczytywanie notatek...')
+      Alert.alert('Notatki', 'TTS będzie tutaj wkrótce 🎙️')
+      break
+
+    case 'create_list':
+      // placeholder — ekran list wkrótce
+      setStatus(`Tworzę listę "${command.payload?.listName}"...`)
+      Alert.alert('Lista', `Tworzenie listy "${command.payload?.listName}" wkrótce!`)
+      break
+
+    case 'add_to_list':
+      setStatus(`Dodaję do listy "${command.payload?.listName}"...`)
+      Alert.alert('Lista', `Dodawanie do listy wkrótce!`)
+      break
+
+    case 'delete_last_note':
+      const { notes, deleteNote } = useNotesStore.getState()
+      if (notes.length > 0) {
+        await deleteNote(notes[0].id)
+        setStatus('Usunięto ostatnią notatkę ✓')
+      } else {
+        setStatus('Brak notatek do usunięcia')
+      }
+      break
+
+    case 'unknown':
+    default:
       Alert.alert(
         'Nie rozpoznano komendy',
-        `Usłyszałem: "${text}"\n\nSpróbuj powiedzieć np. "Zapisz pomysł..."`
+        `Usłyszałem: "${text}"\n\nSpróbuj np:\n• "Zapisz pomysł na..."\n• "Dodaj mleko do listy zakupów"\n• "Odczytaj notatki"`
       )
-    }
   }
+}
 
   return (
     <SafeAreaView style={s.container}>
