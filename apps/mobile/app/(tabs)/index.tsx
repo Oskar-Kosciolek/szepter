@@ -99,6 +99,7 @@ const parseCommand = async (text: string) => {
         await ttsService.speak('Nie masz żadnych notatek.')
         break
       }
+      
 
       const count = Math.min(freshNotes.length, 3)
       const toRead = freshNotes.slice(0, count)
