@@ -6,6 +6,7 @@ import { useWhisperStore } from '../../store/whisperStore'
 import { useNotesStore } from '../../store/notesStore'
 import { commandParser } from '../../services/commandParser'
 import { useListsStore } from '../../store/listsStore'
+import { ttsService } from '../../services/tts'
 import { router } from 'expo-router'
 import { useAudioRecorder, RecordingPresets, setAudioModeAsync } from 'expo-audio'
 const { width } = Dimensions.get('window')
@@ -85,13 +86,34 @@ const parseCommand = async (text: string) => {
     case 'save_note':
       await addNote(command.payload?.content ?? text)
       setStatus('Zapisano notatkę ✓')
+      await ttsService.speak('Notatka zapisana.')
       break
 
-    case 'read_notes':
-      // na razie placeholder — TTS dołożymy później
-      setStatus('Odczytywanie notatek...')
-      Alert.alert('Notatki', 'TTS będzie tutaj wkrótce 🎙️')
+    case 'read_notes': {
+      const { notes, fetchNotes } = useNotesStore.getState()
+      await fetchNotes()
+      const freshNotes = useNotesStore.getState().notes
+
+      if (freshNotes.length === 0) {
+        setStatus('Brak notatek do odczytania')
+        await ttsService.speak('Nie masz żadnych notatek.')
+        break
+      }
+
+      const count = Math.min(freshNotes.length, 3)
+      const toRead = freshNotes.slice(0, count)
+
+      setStatus(`Odczytuję ${count} notatek...`)
+
+      for (let i = 0; i < toRead.length; i++) {
+        await ttsService.speak(
+          `Notatka ${i + 1}: ${toRead[i].content}`
+        )
+      }
+
+      setStatus('Odczytano ✓')
       break
+    }
 
     case 'create_list': {
       const { createList } = useListsStore.getState()
@@ -105,39 +127,39 @@ const parseCommand = async (text: string) => {
     }
 
     case 'add_to_list': {
-  const { lists, createList, addItem, fetchLists } = useListsStore.getState()
-  const listName = command.payload?.listName ?? 'domyślna'
-  const content = command.payload?.content ?? ''
+      const { lists, createList, addItem, fetchLists } = useListsStore.getState()
+      const listName = command.payload?.listName ?? 'domyślna'
+      const content = command.payload?.content ?? ''
 
-  await fetchLists()
-  let list = useListsStore.getState().lists.find(
-    l => l.title.toLowerCase().includes(listName.toLowerCase())
-  )
+      await fetchLists()
+      let list = useListsStore.getState().lists.find(
+        l => l.title.toLowerCase().includes(listName.toLowerCase())
+      )
 
-  if (!list) {
-    list = await createList(listName) ?? undefined
-  }
+      if (!list) {
+        list = await createList(listName) ?? undefined
+      }
 
-  if (list && content) {
-    // Rozbij po przecinku i dodaj każdy element osobno
-    const items = content
-      .split(',')
-      .map((item: string) => item.trim())
-      .filter((item: string) => item.length > 0)
+      if (list && content) {
+        // Rozbij po przecinku i dodaj każdy element osobno
+        const items = content
+          .split(',')
+          .map((item: string) => item.trim())
+          .filter((item: string) => item.length > 0)
 
-    for (const item of items) {
-      await addItem(list.id, item)
+        for (const item of items) {
+          await addItem(list.id, item)
+        }
+
+        const count = items.length
+        setStatus(
+          count === 1
+            ? `Dodano "${items[0]}" do listy "${list.title}" ✓`
+            : `Dodano ${count} elementy do listy "${list.title}" ✓`
+        )
+      }
+      break
     }
-
-    const count = items.length
-    setStatus(
-      count === 1
-        ? `Dodano "${items[0]}" do listy "${list.title}" ✓`
-        : `Dodano ${count} elementy do listy "${list.title}" ✓`
-    )
-  }
-  break
-}
 
     case 'delete_last_note':
       const { notes, deleteNote } = useNotesStore.getState()
