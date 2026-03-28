@@ -136,3 +136,13 @@ export default function HomeScreen() {
 }
 
 const s = StyleSheet.create({
+  container:     { flex: 1, backgroundColor: '#0a0a0a', alignItems: 'center', justifyContent: 'center' },
+  title:         { fontSize: 32, fontWeight: '300', color: '#fff', letterSpacing: 8, marginBottom: 8 },
+  subtitle:      { fontSize: 14, color: '#666', marginBottom: 60, letterSpacing: 2, textAlign: 'center', paddingHorizontal: 40 },
+  btnWrap:       { width: BTN_SIZE * 1.8, height: BTN_SIZE * 1.8, alignItems: 'center', justifyContent: 'center' },
+  ring:          { position: 'absolute', width: BTN_SIZE, height: BTN_SIZE, borderRadius: BTN_SIZE, backgroundColor: '#a78bfa' },
+  btn:           { width: BTN_SIZE, height: BTN_SIZE, borderRadius: BTN_SIZE, backgroundColor: '#1a1a1a', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#2a2a2a' },
+  btnActive:     { backgroundColor: '#4c1d95', borderColor: '#7c3aed' },
+  btnProcessing: { backgroundColor: '#1a1a2e', borderColor: '#3730a3' },
+  loading:       { position: 'absolute', bottom: 120, fontSize: 13, color: '#555', letterSpacing: 1 },
+})

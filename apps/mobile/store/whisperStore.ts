@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { initWhisper, WhisperContext } from 'whisper.rn'
-import * as FileSystem from 'expo-file-system'
+import { File, Paths } from 'expo-file-system'
 import { Asset } from 'expo-asset'
 
 type WhisperStore = {
@@ -20,27 +20,24 @@ export const useWhisperStore = create<WhisperStore>((set, get) => ({
     if (get().whisper) return
 
     try {
-      const modelPath = `${FileSystem.documentDirectory}ggml-small.bin`
-      const fileInfo = await FileSystem.getInfoAsync(modelPath)
+        const modelFile = new File(Paths.document, 'ggml-small.bin')
 
-      if (!fileInfo.exists) {
+        if (!modelFile.exists) {
         console.log('Kopiuję model...')
         const asset = Asset.fromModule(require('../assets/ggml-small.bin'))
         await asset.downloadAsync()
-        await FileSystem.copyAsync({
-          from: asset.localUri!,
-          to: modelPath,
-        })
-      }
+        const sourceFile = new File(asset.localUri!)
+        sourceFile.copy(modelFile)
+        }
 
-      const ctx = await initWhisper({ filePath: modelPath })
-      set({ whisper: ctx, ready: true })
-      console.log('Model gotowy!')
+        const ctx = await initWhisper({ filePath: modelFile.uri })
+        set({ whisper: ctx, ready: true })
+        console.log('Model gotowy!')
     } catch (e) {
-      console.warn('Błąd ładowania modelu:', e)
-      set({ ready: false })
+        console.warn('Błąd ładowania modelu:', e)
+        set({ ready: false })
     }
-  },
+    },
 
   transcribe: async (uri: string) => {
     const { whisper } = get()
