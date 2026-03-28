@@ -5,7 +5,7 @@ Głosowy asystent do notatek i list. React Native + Expo + Supabase.
 ## Stack
 - Expo SDK 54 (React Native)
 - Supabase (baza + auth + sync)
-- whisper.rn (STT offline)
+- whisper.rn (STT offline) / Groq Transcription
 - expo-speech (TTS)
 - Zustand (state)
 
@@ -15,7 +15,11 @@ Głosowy asystent do notatek i list. React Native + Expo + Supabase.
 3. `npx expo start`
 
 ## Fazy
-- [x] Fundament + repo
-- [ ] CRUD notatek i list
-- [ ] Integracja głosowa (whisper.rn)
-- [ ] Sync Supabase
+- [x] Fundament (Expo + nawigacja + UI)
+- [x] Auth (OTP)
+- [x] CRUD notatek + Supabase
+- [x] Transkrypcja głosowa (Groq)
+- [ ] Listy (tabele są w bazie, brak UI)
+- [ ] TTS (odczytywanie notatek głosem)
+- [ ] Sync offline
+- [ ] Historia nagrań
