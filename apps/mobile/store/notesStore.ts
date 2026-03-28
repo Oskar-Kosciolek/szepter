@@ -32,14 +32,13 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
   },
 
   addNote: async (content: string) => {
+    const { data: { user } } = await supabase.auth.getUser()
+
     const { data, error } = await supabase
       .from('notes')
-      .insert({ content })
+      .insert({ content, user_id: user?.id })
       .select()
       .single()
-
-      console.log('data:', data)
-  console.log('error:', error)
 
     if (!error && data) {
       set({ notes: [data, ...get().notes] })

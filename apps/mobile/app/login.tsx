@@ -73,19 +73,19 @@ export default function LoginScreen() {
             <Text style={s.hint}>Wysłaliśmy 6-cyfrowy kod na {email}</Text>
             <TextInput
               style={[s.input, s.codeInput]}
-              placeholder="000000"
+              placeholder="00000000"
               placeholderTextColor="#444"
               value={code}
               onChangeText={setCode}
               keyboardType="number-pad"
-              maxLength={6}
+              maxLength={8}
               autoFocus
             />
             {error && <Text style={s.error}>{error}</Text>}
             <Pressable
               style={[s.btn, (!code.trim() || loading) && s.btnDisabled]}
               onPress={handleVerify}
-              disabled={code.length < 6 || loading}
+              disabled={code.length < 8 || loading}
             >
               {loading
                 ? <ActivityIndicator color="#fff" />
