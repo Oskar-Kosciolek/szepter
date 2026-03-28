@@ -1,16 +1,23 @@
 import { useState, useEffect, useRef } from 'react'
-import { View, Text, Pressable, Animated, StyleSheet, Dimensions } from 'react-native'
+import { View, Text, Pressable, Animated, StyleSheet, Dimensions, Alert } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Mic, MicOff } from 'lucide-react-native'
+import { useWhisperStore } from '../../store/whisperStore'
+import { useNotesStore } from '../../store/notesStore'
 
 const { width } = Dimensions.get('window')
 const BTN_SIZE = width * 0.38
 
 export default function HomeScreen() {
   const [listening, setListening] = useState(false)
+  const [status, setStatus] = useState('Naciśnij aby mówić')
+  const { ready, initModel, startRecording, stopRecording, transcribing } = useWhisperStore()
+  const { addNote } = useNotesStore()
   const pulse1 = useRef(new Animated.Value(1)).current
   const pulse2 = useRef(new Animated.Value(1)).current
   const pulse3 = useRef(new Animated.Value(1)).current
+
+  useEffect(() => { initModel() }, [])
 
   useEffect(() => {
     if (!listening) {
@@ -19,13 +26,12 @@ export default function HomeScreen() {
       pulse3.setValue(1)
       return
     }
-
     const animate = (anim: Animated.Value, delay: number) =>
       Animated.loop(
         Animated.sequence([
           Animated.delay(delay),
           Animated.timing(anim, { toValue: 1.6, duration: 900, useNativeDriver: true }),
-          Animated.timing(anim, { toValue: 1,   duration: 900, useNativeDriver: true }),
+          Animated.timing(anim, { toValue: 1, duration: 900, useNativeDriver: true }),
         ])
       ).start()
 
@@ -34,46 +40,90 @@ export default function HomeScreen() {
     animate(pulse3, 600)
   }, [listening])
 
+  const handlePress = async () => {
+    if (!ready) {
+      Alert.alert(
+        'Model niedostępny',
+        'Model głosowy nie jest załadowany. Sprawdź czy plik ggml-small.bin znajduje się w assets.'
+      )
+      return
+    }
+
+    if (!listening) {
+      setListening(true)
+      setStatus('Słucham...')
+      await startRecording()
+    } else {
+      setListening(false)
+      setStatus('Przetwarzam...')
+      const transcript = await stopRecording()
+
+      if (transcript) {
+        setStatus(`"${transcript}"`)
+        await parseCommand(transcript)
+      } else {
+        setStatus('Nie rozpoznano. Spróbuj ponownie.')
+      }
+
+      setTimeout(() => setStatus('Naciśnij aby mówić'), 3000)
+    }
+  }
+
+  const parseCommand = async (text: string) => {
+    const lower = text.toLowerCase()
+
+    if (lower.includes('zapisz') || lower.includes('notatka') || lower.includes('pomysł')) {
+      await addNote(text)
+      setStatus('Zapisano notatkę ✓')
+    } else {
+      Alert.alert('Nie rozpoznano komendy', `Usłyszałem: "${text}"\n\nSpróbuj powiedzieć np. "Zapisz pomysł..."`)
+    }
+  }
+
   return (
     <SafeAreaView style={s.container}>
       <Text style={s.title}>Szepter</Text>
-      <Text style={s.subtitle}>
-        {listening ? 'Słucham...' : 'Naciśnij aby mówić'}
-      </Text>
+      <Text style={s.subtitle}>{status}</Text>
 
       <View style={s.btnWrap}>
         {[pulse1, pulse2, pulse3].map((anim, i) => (
           <Animated.View
             key={i}
-            style={[s.ring, { transform: [{ scale: anim }], opacity: listening ? 0.15 - i * 0.04 : 0 }]}
+            style={[s.ring, {
+              transform: [{ scale: anim }],
+              opacity: listening ? 0.15 - i * 0.04 : 0
+            }]}
           />
         ))}
-
         <Pressable
-          onPress={() => setListening(v => !v)}
-          style={[s.btn, listening && s.btnActive]}
+          onPress={handlePress}
+          style={[s.btn, listening && s.btnActive, transcribing && s.btnProcessing]}
+          disabled={transcribing}
         >
           {listening
             ? <MicOff size={BTN_SIZE * 0.38} color="#fff" />
-            : <Mic     size={BTN_SIZE * 0.38} color="#fff" />
+            : <Mic size={BTN_SIZE * 0.38} color="#fff" />
           }
         </Pressable>
       </View>
 
-      <Text style={s.hint}>
-        {listening ? 'Powiedz np. "Zapisz pomysł..."' : ''}
-      </Text>
+      {!ready && (
+        <Text style={s.loading}>
+          {transcribing ? 'Przetwarzam...' : 'Model głosowy niedostępny'}
+        </Text>
+      )}
     </SafeAreaView>
   )
 }
 
 const s = StyleSheet.create({
-  container:  { flex: 1, backgroundColor: '#0a0a0a', alignItems: 'center', justifyContent: 'center' },
-  title:      { fontSize: 32, fontWeight: '300', color: '#fff', letterSpacing: 8, marginBottom: 8 },
-  subtitle:   { fontSize: 14, color: '#666', marginBottom: 60, letterSpacing: 2 },
-  btnWrap:    { width: BTN_SIZE * 1.8, height: BTN_SIZE * 1.8, alignItems: 'center', justifyContent: 'center' },
-  ring:       { position: 'absolute', width: BTN_SIZE, height: BTN_SIZE, borderRadius: BTN_SIZE, backgroundColor: '#a78bfa' },
-  btn:        { width: BTN_SIZE, height: BTN_SIZE, borderRadius: BTN_SIZE, backgroundColor: '#1a1a1a', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#2a2a2a' },
-  btnActive:  { backgroundColor: '#4c1d95', borderColor: '#7c3aed' },
-  hint:       { position: 'absolute', bottom: 120, fontSize: 13, color: '#555', letterSpacing: 1 },
+  container:     { flex: 1, backgroundColor: '#0a0a0a', alignItems: 'center', justifyContent: 'center' },
+  title:         { fontSize: 32, fontWeight: '300', color: '#fff', letterSpacing: 8, marginBottom: 8 },
+  subtitle:      { fontSize: 14, color: '#666', marginBottom: 60, letterSpacing: 2, textAlign: 'center', paddingHorizontal: 40 },
+  btnWrap:       { width: BTN_SIZE * 1.8, height: BTN_SIZE * 1.8, alignItems: 'center', justifyContent: 'center' },
+  ring:          { position: 'absolute', width: BTN_SIZE, height: BTN_SIZE, borderRadius: BTN_SIZE, backgroundColor: '#a78bfa' },
+  btn:           { width: BTN_SIZE, height: BTN_SIZE, borderRadius: BTN_SIZE, backgroundColor: '#1a1a1a', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#2a2a2a' },
+  btnActive:     { backgroundColor: '#4c1d95', borderColor: '#7c3aed' },
+  btnProcessing: { backgroundColor: '#1a1a2e', borderColor: '#3730a3' },
+  loading:       { position: 'absolute', bottom: 120, fontSize: 13, color: '#555', letterSpacing: 1 },
 })

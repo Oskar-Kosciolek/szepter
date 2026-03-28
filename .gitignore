@@ -6,3 +6,4 @@ build/
 *.env.local
 .supabase/
 supabase/.temp/
+apps/mobile/assets/ggml-small.bin
