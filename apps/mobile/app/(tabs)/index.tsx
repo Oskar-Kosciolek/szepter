@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react'
 import { View, Text, Pressable, Animated, StyleSheet, Dimensions, Alert } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Mic, MicOff, Loader } from 'lucide-react-native'
-import { useAudioRecorder, AudioModule, RecordingPresets } from 'expo-audio'
 import { useWhisperStore } from '../../store/whisperStore'
 import { useNotesStore } from '../../store/notesStore'
 
@@ -12,20 +11,15 @@ const BTN_SIZE = width * 0.38
 export default function HomeScreen() {
   const [listening, setListening] = useState(false)
   const [status, setStatus] = useState('Naciśnij aby mówić')
-  const { ready, initModel, transcribe, transcribing } = useWhisperStore()
+  const lastTranscript = useRef<string>('')
+  const { ready, initModel, startRealtime, stopRealtime, transcribing } = useWhisperStore()
   const { addNote } = useNotesStore()
-  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY)
 
   const pulse1 = useRef(new Animated.Value(1)).current
   const pulse2 = useRef(new Animated.Value(1)).current
   const pulse3 = useRef(new Animated.Value(1)).current
 
   useEffect(() => { initModel() }, [])
-
-  useEffect(() => {
-    // Poproś o uprawnienia do mikrofonu
-    AudioModule.requestRecordingPermissionsAsync()
-  }, [])
 
   useEffect(() => {
     if (!listening) {
@@ -49,46 +43,47 @@ export default function HomeScreen() {
   }, [listening])
 
   const handlePress = async () => {
-    if (!ready) {
-      Alert.alert('Model niedostępny', 'Model głosowy jeszcze się ładuje, spróbuj za chwilę.')
+  if (!listening) {
+    await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true })
+    await recorder.prepareToRecordAsync()
+    recorder.record()
+    setListening(true)
+    setStatus('Słucham...')
+  } else {
+    await recorder.stop()
+    setListening(false)
+    setStatus('Przetwarzam...')
+
+    const uri = recorder.uri
+    if (!uri) {
+      setStatus('Błąd nagrywania')
+      setTimeout(() => setStatus('Naciśnij aby mówić'), 2000)
       return
     }
 
-    if (!listening) {
-      // Start nagrywania
-      await recorder.record()
-      setListening(true)
-      setStatus('Słucham...')
+    const transcript = await transcribe(uri)
+
+    if (transcript?.trim()) {
+      setStatus(`"${transcript}"`)
+      await parseCommand(transcript)
     } else {
-      // Stop nagrywania
-      await recorder.stop()
-      setListening(false)
-      setStatus('Przetwarzam...')
-
-      const uri = recorder.uri
-      if (!uri) {
-        setStatus('Błąd nagrywania')
-        setTimeout(() => setStatus('Naciśnij aby mówić'), 2000)
-        return
-      }
-
-      const transcript = await transcribe(uri)
-
-      if (transcript?.trim()) {
-        setStatus(`"${transcript}"`)
-        await parseCommand(transcript)
-      } else {
-        setStatus('Nie rozpoznano. Spróbuj ponownie.')
-      }
-
-      setTimeout(() => setStatus('Naciśnij aby mówić'), 3000)
+      setStatus('Nie rozpoznano. Spróbuj ponownie.')
     }
+
+    setTimeout(() => setStatus('Naciśnij aby mówić'), 3000)
   }
+}
 
   const parseCommand = async (text: string) => {
-    const lower = text.toLowerCase()
+    const lower = text.toLowerCase().trim()
 
-    if (lower.includes('zapisz') || lower.includes('notatka') || lower.includes('pomysł')) {
+    if (
+      lower.includes('zapis') ||
+      lower.includes('notatka') ||
+      lower.includes('pomysł') ||
+      lower.includes('zapamiętaj') ||
+      lower.includes('dodaj')
+    ) {
       await addNote(text)
       setStatus('Zapisano notatkę ✓')
     } else {
