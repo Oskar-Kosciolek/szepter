@@ -4,13 +4,18 @@ export type CommandType =
   | 'read_notes'
   | 'create_list'
   | 'delete_last_note'
+  | 'save_task'
+  | 'add_task_to_list'
   | 'unknown'
 
 export type ParsedCommand = {
   type: CommandType
   payload?: {
-    content?: string    // treść notatki / elementu listy
-    listName?: string   // nazwa listy
+    content?: string
+    listName?: string
+    deadline?: string       // ISO 8601, np. "2026-04-01T18:00:00"
+    isRecurring?: boolean
+    recurrenceRule?: string // "weekly", "daily", "monthly"
   }
   confidence: 'high' | 'low'
 }

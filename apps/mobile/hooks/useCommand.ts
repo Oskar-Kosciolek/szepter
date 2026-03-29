@@ -19,6 +19,10 @@ export function useCommand() {
           await addNote(command.payload?.content ?? text)
           await ttsService.speak('Notatka zapisana.')
           return 'Zapisano notatkę ✓'
+        case 'save_task':
+          await addNote(command.payload?.content ?? text, command.payload?.deadline ?? undefined)
+          await ttsService.speak('Zadanie zapisane.')
+          return `Zapisano zadanie ✓${command.payload?.deadline ? ' z terminem' : ''}`
         case 'read_notes': {
           await useNotesStore.getState().fetchNotes()
           const notes = useNotesStore.getState().notes
@@ -32,16 +36,18 @@ export function useCommand() {
           if (newList) router.push(`/list/${newList.id}?title=${encodeURIComponent(listName)}`)
           return `Utworzono listę "${listName}" ✓`
         }
-        case 'add_to_list': {
+        case 'add_to_list':
+        case 'add_task_to_list': {
           const { createList, addItem, fetchLists } = useListsStore.getState()
           const listName = command.payload?.listName ?? 'domyślna'
           const content = command.payload?.content ?? ''
+          const deadline = command.payload?.deadline
           await fetchLists()
           let list = useListsStore.getState().lists.find(l => l.title.toLowerCase().includes(listName.toLowerCase()))
           if (!list) list = await createList(listName) ?? undefined
           if (list && content) {
             const items = content.split(',').map(s => s.trim()).filter(s => s.length > 0)
-            for (const item of items) await addItem(list.id, item)
+            for (const item of items) await addItem(list.id, item, deadline)
             return items.length === 1
               ? `Dodano "${items[0]}" do listy "${list.title}" ✓`
               : `Dodano ${items.length} elementy do listy "${list.title}" ✓`

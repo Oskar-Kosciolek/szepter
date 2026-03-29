@@ -6,13 +6,16 @@ export type Note = {
   content: string
   transcript: string | null
   created_at: string
+  deadline?: string | null
+  is_recurring?: boolean
+  recurrence_rule?: string | null
 }
 
 type NotesStore = {
   notes: Note[]
   loading: boolean
   fetchNotes: () => Promise<void>
-  addNote: (content: string) => Promise<void>
+  addNote: (content: string, deadline?: string) => Promise<void>
   deleteNote: (id: string) => Promise<void>
 }
 
@@ -31,12 +34,12 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
     set({ loading: false })
   },
 
-  addNote: async (content: string) => {
+  addNote: async (content: string, deadline?: string) => {
     const { data: { user } } = await supabase.auth.getUser()
 
     const { data, error } = await supabase
       .from('notes')
-      .insert({ content, user_id: user?.id })
+      .insert({ content, user_id: user?.id, deadline: deadline ?? null })
       .select()
       .single()
 

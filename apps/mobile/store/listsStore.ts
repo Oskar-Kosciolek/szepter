@@ -8,6 +8,9 @@ export type ListItem = {
   done: boolean
   position: number
   created_at: string
+  deadline?: string | null
+  is_recurring?: boolean
+  recurrence_rule?: string | null
 }
 
 export type List = {
@@ -23,7 +26,7 @@ type ListsStore = {
   fetchLists: () => Promise<void>
   createList: (title: string) => Promise<List | null>
   deleteList: (id: string) => Promise<void>
-  addItem: (listId: string, content: string) => Promise<void>
+  addItem: (listId: string, content: string, deadline?: string) => Promise<void>
   toggleItem: (item: ListItem) => Promise<void>
   deleteItem: (id: string, listId: string) => Promise<void>
   fetchItems: (listId: string) => Promise<ListItem[]>
@@ -72,8 +75,7 @@ export const useListsStore = create<ListsStore>((set, get) => ({
     return []
   },
 
-  addItem: async (listId: string, content: string) => {
-    const { data: { user } } = await supabase.auth.getUser()
+  addItem: async (listId: string, content: string, deadline?: string) => {
     const items = await get().fetchItems(listId)
     const position = items.length
 
@@ -81,6 +83,7 @@ export const useListsStore = create<ListsStore>((set, get) => ({
       list_id: listId,
       content,
       position,
+      deadline: deadline ?? null,
     })
   },
 
