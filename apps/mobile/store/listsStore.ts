@@ -11,6 +11,7 @@ export type ListItem = {
   deadline?: string | null
   is_recurring?: boolean
   recurrence_rule?: string | null
+  google_event_id?: string | null
 }
 
 export type List = {

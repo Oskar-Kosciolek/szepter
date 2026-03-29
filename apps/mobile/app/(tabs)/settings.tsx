@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { View, Text, Pressable, StyleSheet, Switch, ScrollView, ActivityIndicator, Alert } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useAuthStore } from '../../store/authStore'
 import { useSettingsStore, ReminderSettings } from '../../store/settingsStore'
+import { calendarService } from '../../services/calendar'
 
 const BEFORE_OPTIONS = [
   { label: '15 min', value: 15 },
@@ -18,9 +19,14 @@ export default function SettingsScreen() {
   const { session, signOut } = useAuthStore()
   const { settings, loading, saving, fetchSettings, saveSettings } = useSettingsStore()
   const [local, setLocal] = useState<ReminderSettings>(settings)
+  const [calendarEmail, setCalendarEmail] = useState<string | null>(null)
+  const [calendarConnecting, setCalendarConnecting] = useState(false)
 
   useEffect(() => { fetchSettings() }, [])
   useEffect(() => { setLocal(settings) }, [settings])
+  useEffect(() => {
+    calendarService.getAccountEmail().then(setCalendarEmail)
+  }, [])
 
   const toggleBefore = (value: number) => {
     setLocal(prev => ({
@@ -35,6 +41,35 @@ export default function SettingsScreen() {
     await saveSettings(local)
     Alert.alert('Zapisano', 'Ustawienia przypomnień zostały zapisane.')
   }
+
+  const handleCalendarConnect = useCallback(async () => {
+    setCalendarConnecting(true)
+    try {
+      const ok = await calendarService.authorize()
+      if (ok) {
+        const email = await calendarService.getAccountEmail()
+        setCalendarEmail(email)
+      } else {
+        Alert.alert('Anulowano', 'Nie połączono z Google Calendar.')
+      }
+    } catch (e) {
+      Alert.alert('Błąd', 'Nie udało się połączyć z Google Calendar.')
+    } finally {
+      setCalendarConnecting(false)
+    }
+  }, [])
+
+  const handleCalendarDisconnect = useCallback(() => {
+    Alert.alert('Rozłącz Google Calendar', 'Nowe zadania nie będą synchronizowane.', [
+      { text: 'Anuluj', style: 'cancel' },
+      {
+        text: 'Rozłącz', style: 'destructive', onPress: async () => {
+          await (calendarService as any).disconnect?.()
+          setCalendarEmail(null)
+        }
+      },
+    ])
+  }, [])
 
   return (
     <SafeAreaView style={s.container}>
@@ -62,7 +97,6 @@ export default function SettingsScreen() {
                   thumbColor="#fff"
                 />
               </View>
-
               <View style={[s.row, s.rowBorder]}>
                 <Text style={s.rowLabel}>Rano w dniu terminu</Text>
                 <Switch
@@ -72,7 +106,6 @@ export default function SettingsScreen() {
                   thumbColor="#fff"
                 />
               </View>
-
               {local.remindMorningOf && (
                 <View style={[s.row, s.rowBorder]}>
                   <Text style={s.rowLabel}>Godzina poranna</Text>
@@ -119,6 +152,27 @@ export default function SettingsScreen() {
           </>
         )}
 
+        {/* Integracje */}
+        <Text style={s.sectionTitle}>Integracje</Text>
+        <View style={s.card}>
+          {calendarEmail ? (
+            <>
+              <Text style={s.label}>Połączono z Google Calendar</Text>
+              <Text style={s.email}>{calendarEmail}</Text>
+              <Pressable style={s.disconnectBtn} onPress={handleCalendarDisconnect}>
+                <Text style={s.disconnectText}>Rozłącz</Text>
+              </Pressable>
+            </>
+          ) : (
+            <Pressable style={[s.connectBtn, calendarConnecting && s.saveBtnDisabled]} onPress={handleCalendarConnect} disabled={calendarConnecting}>
+              {calendarConnecting
+                ? <ActivityIndicator size="small" color="#fff" />
+                : <Text style={s.connectBtnText}>Połącz z Google Calendar</Text>
+              }
+            </Pressable>
+          )}
+        </View>
+
         {/* Wyloguj */}
         <Pressable style={s.signOutBtn} onPress={signOut}>
           <Text style={s.signOutText}>Wyloguj</Text>
@@ -129,30 +183,34 @@ export default function SettingsScreen() {
 }
 
 const s = StyleSheet.create({
-  container:        { flex: 1, backgroundColor: '#0a0a0a', padding: 20 },
-  title:            { fontSize: 28, fontWeight: '300', color: '#fff', letterSpacing: 4, marginBottom: 24 },
-  sectionTitle:     { color: '#555', fontSize: 12, letterSpacing: 2, marginBottom: 10, marginTop: 8 },
-  subLabel:         { color: '#555', fontSize: 12, letterSpacing: 1, marginBottom: 8, marginTop: 4 },
-  card:             { backgroundColor: '#1a1a1a', borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: '#2a2a2a' },
-  label:            { color: '#555', fontSize: 12, letterSpacing: 1 },
-  email:            { color: '#fff', fontSize: 15 },
-  row:              { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 4 },
-  rowBorder:        { borderTopWidth: 1, borderTopColor: '#2a2a2a', marginTop: 10, paddingTop: 14 },
-  rowLabel:         { color: '#ccc', fontSize: 15 },
-  hourPicker:       { flexDirection: 'row', flexWrap: 'wrap', gap: 6, flex: 1, justifyContent: 'flex-end' },
-  hourBtn:          { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, backgroundColor: '#2a2a2a' },
-  hourBtnActive:    { backgroundColor: '#4c1d95' },
-  hourBtnText:      { color: '#555', fontSize: 12 },
-  hourBtnTextActive:{ color: '#fff' },
-  checkboxGroup:    { gap: 12 },
-  checkboxRow:      { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  checkbox:         { width: 20, height: 20, borderRadius: 5, borderWidth: 1, borderColor: '#444', alignItems: 'center', justifyContent: 'center' },
-  checkboxActive:   { backgroundColor: '#7c3aed', borderColor: '#7c3aed' },
-  checkmark:        { color: '#fff', fontSize: 12, fontWeight: '600' },
-  checkboxLabel:    { color: '#ccc', fontSize: 15 },
-  saveBtn:          { backgroundColor: '#7c3aed', borderRadius: 12, padding: 16, alignItems: 'center', marginBottom: 12 },
-  saveBtnDisabled:  { opacity: 0.5 },
-  saveBtnText:      { color: '#fff', fontWeight: '600', fontSize: 15 },
-  signOutBtn:       { backgroundColor: '#1a1a1a', borderRadius: 12, padding: 16, alignItems: 'center', borderWidth: 1, borderColor: '#3f1a1a', marginBottom: 20 },
-  signOutText:      { color: '#f87171', fontWeight: '500' },
+  container:         { flex: 1, backgroundColor: '#0a0a0a', padding: 20 },
+  title:             { fontSize: 28, fontWeight: '300', color: '#fff', letterSpacing: 4, marginBottom: 24 },
+  sectionTitle:      { color: '#555', fontSize: 12, letterSpacing: 2, marginBottom: 10, marginTop: 8 },
+  subLabel:          { color: '#555', fontSize: 12, letterSpacing: 1, marginBottom: 8, marginTop: 4 },
+  card:              { backgroundColor: '#1a1a1a', borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: '#2a2a2a', gap: 4 },
+  label:             { color: '#555', fontSize: 12, letterSpacing: 1 },
+  email:             { color: '#fff', fontSize: 15 },
+  row:               { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 4 },
+  rowBorder:         { borderTopWidth: 1, borderTopColor: '#2a2a2a', marginTop: 10, paddingTop: 14 },
+  rowLabel:          { color: '#ccc', fontSize: 15 },
+  hourPicker:        { flexDirection: 'row', flexWrap: 'wrap', gap: 6, flex: 1, justifyContent: 'flex-end' },
+  hourBtn:           { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, backgroundColor: '#2a2a2a' },
+  hourBtnActive:     { backgroundColor: '#4c1d95' },
+  hourBtnText:       { color: '#555', fontSize: 12 },
+  hourBtnTextActive: { color: '#fff' },
+  checkboxGroup:     { gap: 12 },
+  checkboxRow:       { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  checkbox:          { width: 20, height: 20, borderRadius: 5, borderWidth: 1, borderColor: '#444', alignItems: 'center', justifyContent: 'center' },
+  checkboxActive:    { backgroundColor: '#7c3aed', borderColor: '#7c3aed' },
+  checkmark:         { color: '#fff', fontSize: 12, fontWeight: '600' },
+  checkboxLabel:     { color: '#ccc', fontSize: 15 },
+  saveBtn:           { backgroundColor: '#7c3aed', borderRadius: 12, padding: 16, alignItems: 'center', marginBottom: 12 },
+  saveBtnDisabled:   { opacity: 0.5 },
+  saveBtnText:       { color: '#fff', fontWeight: '600', fontSize: 15 },
+  connectBtn:        { borderRadius: 10, padding: 12, alignItems: 'center', backgroundColor: '#4285f4' },
+  connectBtnText:    { color: '#fff', fontWeight: '600', fontSize: 15 },
+  disconnectBtn:     { marginTop: 10, borderRadius: 10, padding: 10, alignItems: 'center', backgroundColor: '#2a2a2a' },
+  disconnectText:    { color: '#f87171', fontSize: 14 },
+  signOutBtn:        { backgroundColor: '#1a1a1a', borderRadius: 12, padding: 16, alignItems: 'center', borderWidth: 1, borderColor: '#3f1a1a', marginBottom: 20 },
+  signOutText:       { color: '#f87171', fontWeight: '500' },
 })
