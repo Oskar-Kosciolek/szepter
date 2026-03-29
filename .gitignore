@@ -9,3 +9,4 @@ supabase/.temp/
 apps/mobile/assets/ggml-small.bin
 .claude/
 .ai/
+client_secret_*
