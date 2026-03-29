@@ -7,6 +7,7 @@ export type { Note } from '../store/notesStore'
 export function useNotes() {
   const { notes, loading, fetchNotes, addNote, deleteNote } = useNotesStore()
   const [text, setText] = useState('')
+  const [deadline, setDeadline] = useState<Date | null>(null)
   const [saving, setSaving] = useState(false)
 
   useEffect(() => { fetchNotes() }, [])
@@ -14,10 +15,11 @@ export function useNotes() {
   const handleAdd = useCallback(async () => {
     if (!text.trim()) return
     setSaving(true)
-    await addNote(text.trim())
+    await addNote(text.trim(), deadline?.toISOString())
     setText('')
+    setDeadline(null)
     setSaving(false)
-  }, [text, addNote])
+  }, [text, deadline, addNote])
 
   const handleDelete = useCallback((id: string) => {
     Alert.alert('Usuń notatkę', 'Na pewno?', [
@@ -26,5 +28,5 @@ export function useNotes() {
     ])
   }, [deleteNote])
 
-  return { notes, loading, text, setText, saving, handleAdd, handleDelete }
+  return { notes, loading, text, setText, deadline, setDeadline, saving, handleAdd, handleDelete }
 }

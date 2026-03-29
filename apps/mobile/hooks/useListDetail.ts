@@ -9,6 +9,7 @@ export function useListDetail(listId: string) {
   const [items, setItems] = useState<ListItem[]>([])
   const [loading, setLoading] = useState(true)
   const [text, setText] = useState('')
+  const [deadline, setDeadline] = useState<Date | null>(null)
   const [saving, setSaving] = useState(false)
 
   const loadItems = useCallback(async () => {
@@ -23,11 +24,12 @@ export function useListDetail(listId: string) {
   const handleAdd = useCallback(async () => {
     if (!text.trim()) return
     setSaving(true)
-    await addItem(listId, text.trim())
+    await addItem(listId, text.trim(), deadline?.toISOString())
     setText('')
+    setDeadline(null)
     await loadItems()
     setSaving(false)
-  }, [text, listId, addItem, loadItems])
+  }, [text, deadline, listId, addItem, loadItems])
 
   const handleToggle = useCallback(async (item: ListItem) => {
     await toggleItem(item)
@@ -46,5 +48,5 @@ export function useListDetail(listId: string) {
     ])
   }, [listId, deleteItem])
 
-  return { items, loading, text, setText, saving, handleAdd, handleToggle, handleDelete }
+  return { items, loading, text, setText, deadline, setDeadline, saving, handleAdd, handleToggle, handleDelete }
 }
