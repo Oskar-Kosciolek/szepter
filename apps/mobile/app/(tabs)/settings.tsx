@@ -31,7 +31,7 @@ const MAX_NOTES_OPTIONS = [
 export default function SettingsScreen() {
   const { session, signOut } = useAuthStore()
   const {
-    settings, loading, saving,
+    settings, loading,
     fetchSettings, saveSettings,
     voice, fetchVoiceSettings, saveVoiceSettings,
   } = useSettingsStore()
@@ -42,6 +42,9 @@ export default function SettingsScreen() {
   const [calendarEmail, setCalendarEmail] = useState<string | null>(null)
   const [calendarConnecting, setCalendarConnecting] = useState(false)
   const [testingVoice, setTestingVoice] = useState(false)
+  const [savingVoice, setSavingVoice] = useState(false)
+  const [savingBehavior, setSavingBehavior] = useState(false)
+  const [savingReminders, setSavingReminders] = useState(false)
 
   useEffect(() => { fetchSettings() }, [])
   useEffect(() => { fetchVoiceSettings() }, [])
@@ -68,13 +71,24 @@ export default function SettingsScreen() {
   }
 
   const handleSaveReminders = async () => {
+    setSavingReminders(true)
     await saveSettings(local)
+    setSavingReminders(false)
     Alert.alert('Zapisano', 'Ustawienia przypomnień zostały zapisane.')
   }
 
   const handleSaveVoice = async () => {
+    setSavingVoice(true)
     await saveVoiceSettings(localVoice)
+    setSavingVoice(false)
     Alert.alert('Zapisano', 'Ustawienia głosu zostały zapisane.')
+  }
+
+  const handleSaveBehavior = async () => {
+    setSavingBehavior(true)
+    await saveVoiceSettings(localVoice)
+    setSavingBehavior(false)
+    Alert.alert('Zapisano', 'Ustawienia zachowania zostały zapisane.')
   }
 
   const handleTestVoice = async () => {
@@ -83,6 +97,7 @@ export default function SettingsScreen() {
       await ttsService.speak('Cześć, jestem Szepter', {
         rate: localVoice.ttsRate,
         pitch: localVoice.ttsPitch,
+        voice: localVoice.ttsVoice,
       })
     } finally {
       setTestingVoice(false)
@@ -195,8 +210,8 @@ export default function SettingsScreen() {
           </Pressable>
         </View>
 
-        <Pressable style={[s.saveBtn, saving && s.saveBtnDisabled]} onPress={handleSaveVoice} disabled={saving}>
-          {saving
+        <Pressable style={[s.saveBtn, savingVoice && s.saveBtnDisabled]} onPress={handleSaveVoice} disabled={savingVoice}>
+          {savingVoice
             ? <ActivityIndicator size="small" color="#fff" />
             : <Text style={s.saveBtnText}>Zapisz ustawienia głosu</Text>
           }
@@ -250,8 +265,8 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        <Pressable style={[s.saveBtn, saving && s.saveBtnDisabled]} onPress={handleSaveVoice} disabled={saving}>
-          {saving
+        <Pressable style={[s.saveBtn, savingBehavior && s.saveBtnDisabled]} onPress={handleSaveBehavior} disabled={savingBehavior}>
+          {savingBehavior
             ? <ActivityIndicator size="small" color="#fff" />
             : <Text style={s.saveBtnText}>Zapisz zachowanie</Text>
           }
@@ -318,8 +333,8 @@ export default function SettingsScreen() {
               </View>
             </View>
 
-            <Pressable style={[s.saveBtn, saving && s.saveBtnDisabled]} onPress={handleSaveReminders} disabled={saving}>
-              {saving
+            <Pressable style={[s.saveBtn, savingReminders && s.saveBtnDisabled]} onPress={handleSaveReminders} disabled={savingReminders}>
+              {savingReminders
                 ? <ActivityIndicator size="small" color="#fff" />
                 : <Text style={s.saveBtnText}>Zapisz przypomnienia</Text>
               }

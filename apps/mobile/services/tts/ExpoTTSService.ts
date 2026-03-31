@@ -15,7 +15,7 @@ export class ExpoTTSService implements TTSService {
         language: options?.language ?? 'pl-PL',
         rate: options?.rate ?? voice.ttsRate,
         pitch: options?.pitch ?? voice.ttsPitch,
-        voice: options?.language ? undefined : voice.ttsVoice,
+        voice: options?.voice ?? (options?.language ? undefined : voice.ttsVoice),
         onDone: resolve,
         onError: reject,
       })
