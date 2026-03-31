@@ -56,10 +56,10 @@ apps/mobile/
 - [x] Wzorzec Strategy dla STT, TTS i parsera komend
 
 ### 🔧 Milestone 0 — Refactor (tylko JS)
-- [ ] Struktura features/ hooks/ components/
-- [ ] Wydzielenie komponentów z ekranów
-- [ ] Custom hooks (useRecorder, useCommand)
-- [ ] Lepsza obsługa błędów i stanów ładowania
+- [x] Struktura features/ hooks/ components/
+- [x] Wydzielenie komponentów z ekranów
+- [x] Custom hooks (useRecorder, useCommand)
+- [x] Lepsza obsługa błędów i stanów ładowania
 
 ### 📅 Milestone 1 — Zadania + kalendarz (build #4)
 - [ ] Deadliny dla notatek i elementów list
