@@ -4,6 +4,7 @@ import { Plus } from 'lucide-react-native'
 import { useLists } from '../../hooks/useLists'
 import { ListCard } from '../../components/ListCard'
 import { EmptyState } from '../../components/EmptyState'
+import { SkeletonList } from '../../components/SkeletonLoader'
 import { router } from 'expo-router'
 
 export default function ListsScreen() {
@@ -19,7 +20,7 @@ export default function ListsScreen() {
         </Pressable>
       </View>
       {loading
-        ? <ActivityIndicator color="#a78bfa" style={{ marginTop: 40 }} />
+        ? <SkeletonList count={4} type="list" />
         : <FlatList
             data={lists}
             keyExtractor={item => item.id}

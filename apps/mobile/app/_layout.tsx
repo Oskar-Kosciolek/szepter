@@ -5,6 +5,7 @@ import { useAuthStore } from '../store/authStore'
 import { View, ActivityIndicator } from 'react-native'
 import * as Linking from 'expo-linking'
 import { supabase } from '../lib/supabase'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
 export default function RootLayout() {
   const { session, loading, fetchSession } = useAuthStore()
@@ -41,8 +42,14 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (loading) return
-    if (session) router.replace('/(tabs)')
-    else router.replace('/login')
+    if (session) {
+      AsyncStorage.getItem('onboarding_completed').then(done => {
+        if (done) router.replace('/(tabs)')
+        else router.replace('/onboarding')
+      })
+    } else {
+      router.replace('/login')
+    }
   }, [session, loading])
 
   if (loading) return (

@@ -4,6 +4,7 @@ import { useNotes } from '../../hooks/useNotes'
 import { NoteCard } from '../../components/NoteCard'
 import { EmptyState } from '../../components/EmptyState'
 import { DeadlinePicker } from '../../components/DeadlinePicker'
+import { SkeletonList } from '../../components/SkeletonLoader'
 
 export default function NotesScreen() {
   const { notes, loading, text, setText, deadline, setDeadline, saving, handleAdd, handleDelete } = useNotes()
@@ -21,7 +22,7 @@ export default function NotesScreen() {
         <DeadlinePicker value={deadline} onChange={setDeadline} />
       </View>
       {loading
-        ? <ActivityIndicator color="#a78bfa" style={{ marginTop: 40 }} />
+        ? <SkeletonList count={4} type="note" />
         : <FlatList
             data={notes}
             keyExtractor={item => item.id}
