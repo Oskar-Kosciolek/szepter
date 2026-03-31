@@ -85,7 +85,7 @@ apps/mobile/
 - [ ] Eksport notatek (markdown/PDF)
 
 ### ✨ Milestone 5 — Polish + UX (tylko JS)
-- [ ] Onboarding (instrukcja komend)
-- [ ] Ustawienia (głos, język, czułość)
-- [ ] Tryb cichy (TTS off gdy słuchawki)
+- [x] Onboarding (instrukcja komend)
+- [x] Ustawienia (głos, język, czułość)
+- [x] Tryb cichy (TTS off gdy słuchawki)
 - [ ] Historia nagrań
