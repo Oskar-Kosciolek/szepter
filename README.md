@@ -62,7 +62,7 @@ apps/mobile/
 - [x] Lepsza obsługa błędów i stanów ładowania
 
 ### 📅 Milestone 1 — Zadania + kalendarz (build #4)
-- [ ] Deadliny dla notatek i elementów list
+- [x] Deadliny dla notatek i elementów list
 - [ ] Przypomnienia push (expo-notifications)
 - [ ] Sync Google Calendar
 - [ ] Komendy głosowe dla zadań
@@ -88,4 +88,4 @@ apps/mobile/
 - [x] Onboarding (instrukcja komend)
 - [x] Ustawienia (głos, język, czułość)
 - [x] Tryb cichy (TTS off gdy słuchawki)
-- [ ] Historia nagrań
+- [x] Historia nagrań

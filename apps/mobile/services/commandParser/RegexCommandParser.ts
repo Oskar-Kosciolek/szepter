@@ -12,9 +12,6 @@ function parseDate(text: string): string | undefined {
     return `${local.getFullYear()}-${pad(local.getMonth() + 1)}-${pad(local.getDate())}T${pad(local.getHours())}:${pad(local.getMinutes())}:00+01:00`
   }
 
-  const setHour = (d: Date, h: number) => { d.setHours(h, 0, 0, 0); return d }
-
-  // Godzina z tekstu np. "o 18", "o 9:30"
   const hourMatch = t.match(/o (\d{1,2})(?::(\d{2}))?/)
   const hour = hourMatch ? parseInt(hourMatch[1]) : 9
   const minute = hourMatch?.[2] ? parseInt(hourMatch[2]) : 0
@@ -68,6 +65,71 @@ export class RegexCommandParser implements CommandParser {
     const deadline = parseDate(t)
     const { isRecurring, recurrenceRule } = parseRecurrence(t)
     const hasDate = !!deadline || isRecurring
+
+    // read_lists: "odczytaj moje listy", "jakie mam listy", "pokaż listy"
+    if (t.match(/odczytaj (moje )?listy|jakie mam listy|pokaż (moje )?listy|wyświetl (moje )?listy/)) {
+      return { type: 'read_lists', confidence: 'low' }
+    }
+
+    // summarize_list: "podsumuj listę X"
+    if (t.match(/podsumuj listę|podsumowanie listy|ile (zostało|jest) (do zrobienia )?na liście/)) {
+      const match = transcript.match(/(?:podsumuj listę|podsumowanie listy|na liście)\s+(.+)/i)
+      return {
+        type: 'summarize_list',
+        payload: { listName: match?.[1]?.trim() ?? '' },
+        confidence: 'low',
+      }
+    }
+
+    // read_list: "odczytaj listę X", "co jest na liście X"
+    if (t.match(/odczytaj listę|przeczytaj listę|co jest na liście|pokaż listę/)) {
+      const match = transcript.match(/(?:odczytaj|przeczytaj|pokaż) listę (.+)/i)
+        ?? transcript.match(/co jest na liście (.+)/i)
+      return {
+        type: 'read_list',
+        payload: { listName: match?.[1]?.trim() ?? '' },
+        confidence: 'low',
+      }
+    }
+
+    // check_item: "zaznacz X (na liście Y)", "oznacz X jako zrobione"
+    if (t.match(/zaznacz|oznacz.*(zrobion|gotow)/)) {
+      const match = transcript.match(/(?:zaznacz|oznacz)\s+(.+?)(?:\s+(?:na liście|z listy)\s+(.+))?$/i)
+      return {
+        type: 'check_item',
+        payload: {
+          itemName: match?.[1]?.trim() ?? '',
+          listName: match?.[2]?.trim(),
+        },
+        confidence: 'low',
+      }
+    }
+
+    // uncheck_item: "odznacz X", "cofnij zaznaczenie X"
+    if (t.match(/odznacz|cofnij zaznaczenie/)) {
+      const match = transcript.match(/(?:odznacz|cofnij zaznaczenie)\s+(.+?)(?:\s+(?:na liście|z listy)\s+(.+))?$/i)
+      return {
+        type: 'uncheck_item',
+        payload: {
+          itemName: match?.[1]?.trim() ?? '',
+          listName: match?.[2]?.trim(),
+        },
+        confidence: 'low',
+      }
+    }
+
+    // delete_list_item: "usuń X z listy Y"
+    if (t.match(/usuń .+ z listy|skasuj .+ z listy/)) {
+      const match = transcript.match(/(?:usuń|skasuj)\s+(.+?)\s+z listy\s+(.+)/i)
+      return {
+        type: 'delete_list_item',
+        payload: {
+          itemName: match?.[1]?.trim() ?? '',
+          listName: match?.[2]?.trim() ?? '',
+        },
+        confidence: 'low',
+      }
+    }
 
     if (t.match(/zapisz|notatka|pomysł|zapamiętaj/)) {
       return {

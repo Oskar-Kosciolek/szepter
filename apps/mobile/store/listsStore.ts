@@ -31,6 +31,7 @@ type ListsStore = {
   toggleItem: (item: ListItem) => Promise<void>
   deleteItem: (id: string, listId: string) => Promise<void>
   fetchItems: (listId: string) => Promise<ListItem[]>
+  reorderItems: (listId: string, items: ListItem[]) => Promise<void>
 }
 
 export const useListsStore = create<ListsStore>((set, get) => ({
@@ -97,5 +98,13 @@ export const useListsStore = create<ListsStore>((set, get) => ({
 
   deleteItem: async (id: string, listId: string) => {
     await supabase.from('list_items').delete().eq('id', id)
+  },
+
+  reorderItems: async (listId: string, items: ListItem[]) => {
+    await Promise.all(
+      items.map((item, index) =>
+        supabase.from('list_items').update({ position: index }).eq('id', item.id)
+      )
+    )
   },
 }))

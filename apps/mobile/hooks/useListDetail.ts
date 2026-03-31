@@ -2,10 +2,17 @@ import { useState, useEffect, useCallback } from 'react'
 import { Alert } from 'react-native'
 import { useListsStore, ListItem } from '../store/listsStore'
 
+function reorder<T>(arr: T[], fromIndex: number, toIndex: number): T[] {
+  const result = [...arr]
+  const [moved] = result.splice(fromIndex, 1)
+  result.splice(toIndex, 0, moved)
+  return result
+}
+
 export type { ListItem } from '../store/listsStore'
 
 export function useListDetail(listId: string) {
-  const { addItem, toggleItem, deleteItem, fetchItems } = useListsStore()
+  const { addItem, toggleItem, deleteItem, fetchItems, reorderItems } = useListsStore()
   const [items, setItems] = useState<ListItem[]>([])
   const [loading, setLoading] = useState(true)
   const [text, setText] = useState('')
@@ -48,5 +55,11 @@ export function useListDetail(listId: string) {
     ])
   }, [listId, deleteItem])
 
-  return { items, loading, text, setText, deadline, setDeadline, saving, handleAdd, handleToggle, handleDelete }
+  const handleReorder = useCallback(async (fromIndex: number, toIndex: number) => {
+    const reordered = reorder(items, fromIndex, toIndex)
+    setItems(reordered)
+    await reorderItems(listId, reordered)
+  }, [items, listId, reorderItems])
+
+  return { items, loading, text, setText, deadline, setDeadline, saving, handleAdd, handleToggle, handleDelete, handleReorder }
 }

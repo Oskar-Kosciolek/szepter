@@ -16,6 +16,12 @@ Dostępne typy komend:
 - read_notes: użytkownik chce odczytać notatki
 - create_list: użytkownik chce utworzyć nową listę
 - delete_last_note: użytkownik chce usunąć ostatnią notatkę
+- read_lists: użytkownik chce odczytać wszystkie listy (np. "odczytaj moje listy", "jakie mam listy")
+- read_list: użytkownik chce odczytać konkretną listę (np. "odczytaj listę zakupów", "co jest na liście zakupów")
+- check_item: użytkownik chce oznaczyć element jako zrobiony (np. "zaznacz mleko na liście zakupów", "odznacz jako zrobione mleko")
+- uncheck_item: użytkownik chce odznaczyć element (np. "odznacz mleko", "cofnij zaznaczenie mleka")
+- delete_list_item: użytkownik chce usunąć element z listy (np. "usuń mleko z listy zakupów")
+- summarize_list: użytkownik chce podsumowanie listy (np. "podsumuj listę zakupów", "ile zostało do zrobienia na liście")
 - unknown: nie rozpoznano intencji
 
 Rozpoznawanie dat (zawsze w strefie UTC+1):
@@ -33,6 +39,7 @@ Odpowiedz TYLKO w formacie JSON, bez żadnego tekstu przed ani po:
   "payload": {
     "content": "treść notatki lub elementu (jeśli dotyczy)",
     "listName": "nazwa listy (jeśli dotyczy)",
+    "itemName": "nazwa elementu listy (dla check_item, uncheck_item, delete_list_item)",
     "deadline": "ISO 8601 (tylko jeśli podano datę)",
     "isRecurring": false,
     "recurrenceRule": "weekly|daily|monthly (tylko jeśli cykliczne)"

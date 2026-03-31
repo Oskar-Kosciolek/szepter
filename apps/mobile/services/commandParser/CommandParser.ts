@@ -6,6 +6,12 @@ export type CommandType =
   | 'delete_last_note'
   | 'save_task'
   | 'add_task_to_list'
+  | 'read_lists'
+  | 'read_list'
+  | 'check_item'
+  | 'uncheck_item'
+  | 'delete_list_item'
+  | 'summarize_list'
   | 'unknown'
 
 export type ParsedCommand = {
@@ -13,9 +19,10 @@ export type ParsedCommand = {
   payload?: {
     content?: string
     listName?: string
-    deadline?: string       // ISO 8601, np. "2026-04-01T18:00:00"
+    itemName?: string
+    deadline?: string
     isRecurring?: boolean
-    recurrenceRule?: string // "weekly", "daily", "monthly"
+    recurrenceRule?: string
   }
   confidence: 'high' | 'low'
 }
