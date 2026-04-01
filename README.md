@@ -68,10 +68,10 @@ apps/mobile/
 - [ ] Komendy głosowe dla zadań
 
 ### 📋 Milestone 2 — Listy pełna funkcjonalność (tylko JS)
-- [ ] Odczytywanie list głosem
-- [ ] Oznaczanie elementów jako zrobione głosem
-- [ ] Usuwanie elementów głosem
-- [ ] Przeciąganie elementów (kolejność)
+- [x] Odczytywanie list głosem
+- [x] Oznaczanie elementów jako zrobione głosem
+- [x] Usuwanie elementów głosem
+- [x] Przeciąganie elementów (kolejność)
 
 ### 🎙️ Milestone 3 — Wake word + nasłuch w tle (build #5)
 - [ ] Foreground service Android
