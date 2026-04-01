@@ -16,6 +16,8 @@ export type VoiceSettings = {
   autoReadAfterSave: boolean
   maxNotesToRead: number
   ttsSilentMode: boolean
+  wakeWordEnabled: boolean
+  wakeWordThreshold: number  // dBFS, zakres -50 do -20
 }
 
 const REMINDER_DEFAULTS: ReminderSettings = {
@@ -33,6 +35,8 @@ export const VOICE_DEFAULTS: VoiceSettings = {
   autoReadAfterSave: false,
   maxNotesToRead: 3,
   ttsSilentMode: false,
+  wakeWordEnabled: false,
+  wakeWordThreshold: -35,
 }
 
 type SettingsStore = {
@@ -113,6 +117,8 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
           autoReadAfterSave: data.auto_read_after_save ?? VOICE_DEFAULTS.autoReadAfterSave,
           maxNotesToRead: data.max_notes_to_read ?? VOICE_DEFAULTS.maxNotesToRead,
           ttsSilentMode: data.tts_silent_mode ?? VOICE_DEFAULTS.ttsSilentMode,
+          wakeWordEnabled: data.wake_word_enabled ?? VOICE_DEFAULTS.wakeWordEnabled,
+          wakeWordThreshold: data.wake_word_threshold ?? VOICE_DEFAULTS.wakeWordThreshold,
         },
       })
     }
@@ -132,6 +138,8 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
       auto_read_after_save: v.autoReadAfterSave,
       max_notes_to_read: v.maxNotesToRead,
       tts_silent_mode: v.ttsSilentMode,
+      wake_word_enabled: v.wakeWordEnabled,
+      wake_word_threshold: v.wakeWordThreshold,
       updated_at: new Date().toISOString(),
     }, { onConflict: 'user_id' })
 

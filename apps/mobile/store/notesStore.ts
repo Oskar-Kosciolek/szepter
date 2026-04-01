@@ -7,6 +7,7 @@ export type Note = {
   transcript: string | null
   created_at: string
   deadline?: string | null
+  notified?: boolean
   is_recurring?: boolean
   recurrence_rule?: string | null
   google_event_id?: string | null
@@ -40,7 +41,7 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
 
     const { data, error } = await supabase
       .from('notes')
-      .insert({ content, user_id: user?.id, deadline: deadline ?? null })
+      .insert({ content, user_id: user?.id, deadline: deadline ?? null, notified: false })
       .select()
       .single()
 

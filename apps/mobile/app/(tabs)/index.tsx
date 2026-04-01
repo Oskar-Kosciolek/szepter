@@ -2,15 +2,22 @@ import { Text, StyleSheet } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { MicButton } from '../../components/MicButton'
 import { useVoiceFlow } from '../../hooks/useVoiceFlow'
+import { useWakeWord } from '../../hooks/useWakeWord'
 
 export default function HomeScreen() {
   const { handlePress, listening, status, transcribing } = useVoiceFlow()
+  const { wakeWordState } = useWakeWord(handlePress)
 
   return (
     <SafeAreaView style={s.container}>
       <Text style={s.title}>Szepter</Text>
       <Text style={s.subtitle} numberOfLines={2}>{status}</Text>
-      <MicButton listening={listening} transcribing={transcribing} onPress={handlePress} />
+      <MicButton
+        listening={listening}
+        transcribing={transcribing}
+        onPress={handlePress}
+        wakeWordState={wakeWordState}
+      />
     </SafeAreaView>
   )
 }

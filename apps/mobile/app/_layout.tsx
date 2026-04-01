@@ -7,11 +7,18 @@ import * as Linking from 'expo-linking'
 import { supabase } from '../lib/supabase'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import { notificationService } from '../services/notifications'
+import { registerReminderTask } from '../tasks/reminderTask'
 
 export default function RootLayout() {
   const { session, loading, fetchSession } = useAuthStore()
 
   useEffect(() => { fetchSession() }, [])
+
+  useEffect(() => {
+    notificationService.requestPermissions().catch(console.warn)
+    registerReminderTask().catch(console.warn)
+  }, [])
 
   useEffect(() => {
     // Obsługa deep linku gdy aplikacja jest już otwarta

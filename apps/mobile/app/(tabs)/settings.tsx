@@ -5,6 +5,7 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import * as Speech from 'expo-speech'
+import { Audio } from 'expo-av'
 import { useAuthStore } from '../../store/authStore'
 import { useSettingsStore, ReminderSettings, VoiceSettings } from '../../store/settingsStore'
 import { calendarService } from '../../services/calendar'
@@ -19,6 +20,7 @@ const BEFORE_OPTIONS = [
 ]
 
 const MORNING_HOURS = [6, 7, 8, 9, 10, 11, 12]
+const THRESHOLD_STEPS = [-50, -45, -40, -35, -30, -25, -20]
 const RATE_STEPS = [0.5, 0.7, 0.9, 1.1, 1.3, 1.5]
 const PITCH_STEPS = [0.5, 0.75, 1.0, 1.25, 1.5]
 const MAX_NOTES_OPTIONS = [
@@ -45,6 +47,7 @@ export default function SettingsScreen() {
   const [savingVoice, setSavingVoice] = useState(false)
   const [savingBehavior, setSavingBehavior] = useState(false)
   const [savingReminders, setSavingReminders] = useState(false)
+  const [micPermission, setMicPermission] = useState<'granted' | 'denied' | 'unknown'>('unknown')
 
   useEffect(() => { fetchSettings() }, [])
   useEffect(() => { fetchVoiceSettings() }, [])
@@ -58,6 +61,11 @@ export default function SettingsScreen() {
         v.identifier?.toLowerCase().includes('pl')
       )
       setAvailableVoices(polish.length > 0 ? polish : voices.slice(0, 8))
+    })
+  }, [])
+  useEffect(() => {
+    Audio.getPermissionsAsync().then(({ status }) => {
+      setMicPermission(status === 'granted' ? 'granted' : status === 'denied' ? 'denied' : 'unknown')
     })
   }, [])
 
@@ -89,6 +97,14 @@ export default function SettingsScreen() {
     await saveVoiceSettings(localVoice)
     setSavingBehavior(false)
     Alert.alert('Zapisano', 'Ustawienia zachowania zostały zapisane.')
+  }
+
+  const [savingWakeWord, setSavingWakeWord] = useState(false)
+  const handleSaveWakeWord = async () => {
+    setSavingWakeWord(true)
+    await saveVoiceSettings(localVoice)
+    setSavingWakeWord(false)
+    Alert.alert('Zapisano', 'Ustawienia wake word zostały zapisane.')
   }
 
   const handleTestVoice = async () => {
@@ -272,6 +288,65 @@ export default function SettingsScreen() {
           }
         </Pressable>
 
+        {/* Nasłuch wake word */}
+        <Text style={s.sectionTitle}>Nasłuch wake word</Text>
+        <View style={s.card}>
+          <View style={s.row}>
+            <View style={{ flex: 1 }}>
+              <Text style={s.rowLabel}>Nasłuch wake word</Text>
+              <Text style={s.hintText}>Szepter będzie nasłuchiwać w tle. Wpływa na zużycie baterii.</Text>
+            </View>
+            <Switch
+              value={localVoice.wakeWordEnabled}
+              onValueChange={v => setLocalVoice(prev => ({ ...prev, wakeWordEnabled: v }))}
+              trackColor={{ false: '#2a2a2a', true: '#7c3aed' }}
+              thumbColor="#fff"
+            />
+          </View>
+
+          <View style={[s.row, s.rowBorder]}>
+            <Text style={s.rowLabel}>Czułość mikrofonu (dBFS)</Text>
+            <View style={s.stepRow}>
+              {THRESHOLD_STEPS.map(t => (
+                <Pressable
+                  key={t}
+                  style={[s.stepBtn, localVoice.wakeWordThreshold === t && s.stepBtnActive]}
+                  onPress={() => setLocalVoice(prev => ({ ...prev, wakeWordThreshold: t }))}
+                >
+                  <Text style={[s.stepText, localVoice.wakeWordThreshold === t && s.stepTextActive]}>{t}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+
+          <View style={[s.row, s.rowBorder]}>
+            <Text style={s.rowLabel}>Status</Text>
+            <View style={[
+              s.statusBadge,
+              micPermission === 'denied'
+                ? s.statusBadgeDenied
+                : localVoice.wakeWordEnabled
+                  ? s.statusBadgeActive
+                  : s.statusBadgeInactive,
+            ]}>
+              <Text style={s.statusBadgeText}>
+                {micPermission === 'denied'
+                  ? 'Brak uprawnień mikrofonu'
+                  : localVoice.wakeWordEnabled
+                    ? 'Aktywny'
+                    : 'Nieaktywny'}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        <Pressable style={[s.saveBtn, savingWakeWord && s.saveBtnDisabled]} onPress={handleSaveWakeWord} disabled={savingWakeWord}>
+          {savingWakeWord
+            ? <ActivityIndicator size="small" color="#fff" />
+            : <Text style={s.saveBtnText}>Zapisz ustawienia wake word</Text>
+          }
+        </Pressable>
+
         {/* Przypomnienia */}
         <Text style={s.sectionTitle}>Przypomnienia</Text>
 
@@ -418,4 +493,11 @@ const s = StyleSheet.create({
   disconnectText:    { color: '#f87171', fontSize: 14 },
   signOutBtn:        { backgroundColor: '#1a1a1a', borderRadius: 12, padding: 16, alignItems: 'center', borderWidth: 1, borderColor: '#3f1a1a', marginBottom: 20 },
   signOutText:       { color: '#f87171', fontWeight: '500' },
+  // Wake word
+  hintText:          { color: '#555', fontSize: 12, marginTop: 3, lineHeight: 16, paddingRight: 12 },
+  statusBadge:       { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
+  statusBadgeActive: { backgroundColor: '#14532d' },
+  statusBadgeInactive:{ backgroundColor: '#2a2a2a' },
+  statusBadgeDenied: { backgroundColor: '#3f1a1a' },
+  statusBadgeText:   { fontSize: 12, color: '#fff', fontWeight: '500' },
 })
