@@ -29,7 +29,7 @@ export class ExpoNotificationService implements NotificationService {
       })
       await Notifications.setNotificationChannelAsync('wake-word', {
         name: 'Nasłuch w tle',
-        importance: Notifications.AndroidImportance.LOW,
+        importance: Notifications.AndroidImportance.MIN,
         showBadge: false,
       })
     }

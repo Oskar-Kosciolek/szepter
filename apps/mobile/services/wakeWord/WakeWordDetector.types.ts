@@ -1,7 +1,9 @@
 /**
  * @module WakeWordDetector.types
  * @description Interfejs detektora wake word. Wzorzec Strategy —
- * aktualna implementacja: WhisperWakeWordService (energy+whisper).
+ * aktuale implementacje: 
+ *  WhisperWakeWordService (energy+whisper), 
+ *  GroqWakeWordService (energy+groq).
  * Rozszerzalne o np. cloud-based detection w przyszłości.
  */
 
@@ -15,4 +17,4 @@ export interface WakeWordDetector {
 }
 
 /** Strategia detekcji wake word. Rozszerzalne. */
-export type WakeWordStrategy = 'energy+whisper'
+export type WakeWordStrategy = 'energy+groq' | 'energy+whisper'

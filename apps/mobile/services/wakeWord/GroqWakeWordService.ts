@@ -1,18 +1,16 @@
 /**
- * @module WhisperWakeWordService
+ * @module GroqWakeWordService
  * @description Implementacja WakeWordDetector. Dwustopniowa architektura:
- * 1. EnergyDetector (tani) filtruje ciszę
- * 2. whisper.rn transkrybuje lokalnie 2s okno audio
+ * 1. EnergyDetector filtruje ciszę
+ * 2. GroqTranscriptionService transkrybuje audio
  * 3. Sprawdza podobieństwo do "szepter" (Levenshtein <= 2)
- * Whisper context inicjowany lazy przy pierwszym starcie.
  */
 
-import { initWhisper, WhisperContext } from 'whisper.rn'
 import { WakeWordDetector } from './WakeWordDetector.types'
 import { EnergyDetector } from './EnergyDetector'
+import { transcriptionService } from '../transcription'
 
 const WAKE_WORD = 'szepter'
-const MODEL_PATH = require('../../assets/ggml-small.bin')
 
 /** Prosta odległość Levenshteina dla krótkich stringów. */
 function levenshtein(a: string, b: string): number {
@@ -37,10 +35,11 @@ function containsWakeWord(transcript: string): boolean {
   return words.some(word => levenshtein(word, WAKE_WORD) <= 2)
 }
 
-export class WhisperWakeWordService implements WakeWordDetector {
+export class GroqWakeWordService implements WakeWordDetector {
+  private transcriptionService = transcriptionService
+
   onWakeWord: (() => void) | null = null
 
-  private ctx: WhisperContext | null = null
   private energy = new EnergyDetector()
   private running = false
   private isTranscribing = false
@@ -48,11 +47,6 @@ export class WhisperWakeWordService implements WakeWordDetector {
   async start(): Promise<void> {
     if (this.running) return
     this.running = true
-
-    // Lazy init kontekstu Whispera
-    if (!this.ctx) {
-      this.ctx = await initWhisper({ filePath: MODEL_PATH })
-    }
 
     this.energy.onEnergyDetected = (uri) => this.handleAudio(uri)
     await this.energy.start()
@@ -64,26 +58,25 @@ export class WhisperWakeWordService implements WakeWordDetector {
     this.energy.onEnergyDetected = null
   }
 
-  private async handleAudio(uri: string): Promise<void> {
-    if (!this.ctx || !this.running) return
+  private async handleAudio(uri: string): Promise<void | null> {
+    if (!this.running) return
     if (this.isTranscribing) return
 
     this.isTranscribing = true
 
     try {
-      const { promise } = this.ctx.transcribe(uri, {
-        language: 'pl',
-        maxLen: 1,      // jeden token — szybko
-        noContext: true,
-        singleSegment: true,
-      })
-      const { result } = await promise
+      const result = await this.transcriptionService.transcribe(uri)
+        if (result.error) {
+          console.warn('Błąd transkrypcji:', result.error)
+          return null
+        }
+        console.log('transkrypt:', result.text)
 
-      if (result && containsWakeWord(result)) {
+      if (result && containsWakeWord(result.text)) {
         this.onWakeWord?.()
       }
     } catch (e) {
-      console.warn('[WhisperWakeWordService] błąd transkrypcji:', e)
+      console.warn('[GroqWakeWordService] błąd transkrypcji:', e)
     } finally {
       this.isTranscribing = false
     }

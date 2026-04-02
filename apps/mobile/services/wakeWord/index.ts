@@ -6,12 +6,18 @@
 
 import { WakeWordDetector, WakeWordStrategy } from './WakeWordDetector.types'
 import { WhisperWakeWordService } from './WhisperWakeWordService'
+import { GroqWakeWordService } from './GroqWakeWordService'
 
 export function createWakeWordDetector(
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  _strategy: WakeWordStrategy = 'energy+whisper',
+  _strategy: WakeWordStrategy = 'energy+groq',
 ): WakeWordDetector {
-  return new WhisperWakeWordService()
+  if ('energy+whisper' === _strategy) {
+    return new WhisperWakeWordService()
+  } else if ('energy+groq' === _strategy) {
+    return new GroqWakeWordService()
+  } else {
+    throw new Error('Niepoprawny WakeWordDetector.')
+  }
 }
 
 export type { WakeWordDetector, WakeWordStrategy } from './WakeWordDetector.types'

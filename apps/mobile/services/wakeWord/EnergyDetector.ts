@@ -42,10 +42,11 @@ export class EnergyDetector {
         playsInSilentMode: true,
       })
       this.recording = new Audio.Recording()
-      await this.recording.prepareToRecordAsync({
-        ...Audio.RecordingOptionsPresets.HIGH_QUALITY,
-        isMeteringEnabled: true,
-      })
+      // await this.recording.prepareToRecordAsync({
+      //   ...Audio.RecordingOptionsPresets.HIGH_QUALITY,
+      //   isMeteringEnabled: true,
+      // })
+      await this.recording.prepareToRecordAsync(this.getRecordingOptions())
       await this.recording.startAsync()
       this.aboveThresholdSince = null
       this.startPoll()
@@ -64,11 +65,14 @@ export class EnergyDetector {
 
         const threshold = useSettingsStore.getState().voice.wakeWordThreshold
         const metering = status.metering ?? -160
+        // console.log('metering', metering/)
 
         if (metering > threshold) {
           if (this.aboveThresholdSince === null) {
+            console.log(new Date().toISOString(), 'metering start capture', metering);
             this.aboveThresholdSince = Date.now()
           } else if (Date.now() - this.aboveThresholdSince >= SUSTAINED_MS) {
+            console.log(new Date().toISOString(), 'metering end capture and emit', metering);
             // Energia utrzymana — nagraj okno i przekaż
             this.aboveThresholdSince = null
             await this.captureAndEmit()
@@ -94,6 +98,8 @@ export class EnergyDetector {
     if (!rec) return
 
     try {
+      // Nagraj pełne okno zanim zatrzymasz
+      await new Promise(resolve => setTimeout(resolve, WINDOW_SECONDS * 1000))
       await rec.stopAndUnloadAsync()
       const uri = rec.getURI()
       if (uri) this.onEnergyDetected?.(uri)
@@ -112,4 +118,29 @@ export class EnergyDetector {
     } catch { /* ignoruj — mogło być już zatrzymane */ }
     this.recording = null
   }
+
+  private getRecordingOptions(): Audio.RecordingOptions {
+  return {
+    isMeteringEnabled: true,
+    android: {
+      extension: '.wav',
+      outputFormat: Audio.AndroidOutputFormat.DEFAULT,
+      audioEncoder: Audio.AndroidAudioEncoder.DEFAULT,
+      sampleRate: 16000,
+      numberOfChannels: 1,
+      bitRate: 256000,
+    },
+    ios: {
+      extension: '.wav',
+      audioQuality: Audio.IOSAudioQuality.HIGH,
+      sampleRate: 16000,
+      numberOfChannels: 1,
+      bitRate: 256000,
+      linearPCMBitDepth: 16,
+      linearPCMIsBigEndian: false,
+      linearPCMIsFloat: false,
+    },
+    web: {},
+  }
+}
 }
