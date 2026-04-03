@@ -74,18 +74,34 @@ apps/mobile/
 - [x] Przeciąganie elementów (kolejność)
 
 ### 🎙️ Milestone 3 — Wake word + nasłuch w tle (build #5)
-- [ ] Foreground service Android
-- [ ] Wake word detection (Picovoice Porcupine)
+- [x] Foreground service Android
+- [x] Wake word detection (Picovoice Porcupine)
 - [ ] Aktywacja bez dotykania ekranu
-
-### 🔄 Milestone 4 — Sync offline + web app (build #6)
-- [ ] SQLite lokalnie + kolejka sync
-- [ ] Web app Next.js (ta sama Supabase)
-- [ ] Tagi i wyszukiwanie głosowe
-- [ ] Eksport notatek (markdown/PDF)
 
 ### ✨ Milestone 5 — Polish + UX (tylko JS)
 - [x] Onboarding (instrukcja komend)
 - [x] Ustawienia (głos, język, czułość)
 - [x] Tryb cichy (TTS off gdy słuchawki)
 - [x] Historia nagrań
+### 🔄 Milestone 4 — Offline sync + web app (fundament)
+- [x] expo-sqlite jako lokalna baza (offline-first)
+- [x] SyncService: push/pull z Supabase (last-write-wins po serwerowym updated_at)
+- [x] useNetworkSync: auto-sync przy powrocie połączenia
+- [x] Seed przy pierwszym logowaniu (full pull z Supabase)
+- [ ] Monorepo: packages/shared/ (typy + klient Supabase)
+- [ ] apps/web/ — Vite + React + TypeScript
+- [ ] Logowanie OTP (to samo konto Supabase co mobile)
+- [ ] Podgląd notatek i list w przeglądarce (read-only)
+- [ ] Eksport notatek (markdown/PDF)
+- [ ] Tagi i wyszukiwanie głosowe
+
+### ✏️ Milestone 6 — Web app: edycja
+- [ ] Tworzenie i edycja notatek/list w przeglądarce
+- [ ] Usuwanie z potwierdzeniem
+- [ ] Zmiany widoczne na mobile w czasie rzeczywistym (Supabase Realtime)
+- [ ] Responsywny UI (desktop + tablet)
+
+### 🎙️ Milestone 7 — Web app: głos w przeglądarce
+- [ ] Nagrywanie audio (MediaRecorder API)
+- [ ] Transkrypcja przez Groq Whisper (ten sam serwis co mobile)
+- [ ] Parser komend głosowych w przeglądarce
