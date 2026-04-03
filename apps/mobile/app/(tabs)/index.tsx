@@ -5,8 +5,8 @@ import { useVoiceFlow } from '../../hooks/useVoiceFlow'
 import { useWakeWord } from '../../hooks/useWakeWord'
 
 export default function HomeScreen() {
-  const { handlePress, listening, status, transcribing } = useVoiceFlow()
-  const { wakeWordState } = useWakeWord(handlePress)
+  const { handlePress, startAutoRecording, listening, status, transcribing } = useVoiceFlow()
+  const { wakeWordState } = useWakeWord(startAutoRecording)
 
   return (
     <SafeAreaView style={s.container}>
