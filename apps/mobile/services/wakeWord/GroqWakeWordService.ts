@@ -12,8 +12,6 @@ import { transcriptionService } from '../transcription'
 import { containsWakeWord } from '../../utils/fuzzyMatch'
 
 export class GroqWakeWordService implements WakeWordDetector {
-  private transcriptionService = transcriptionService
-
   onWakeWord: (() => void) | null = null
 
   private energy = new EnergyDetector()
@@ -41,7 +39,7 @@ export class GroqWakeWordService implements WakeWordDetector {
     this.isTranscribing = true
 
     try {
-      const result = await this.transcriptionService.transcribe(uri)
+      const result = await transcriptionService.transcribe(uri)
         if (result.error) {
           console.warn('Błąd transkrypcji:', result.error)
           return null
