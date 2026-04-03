@@ -2,7 +2,7 @@
  * @module ForegroundServiceManager
  * @description Zarządza persistent notification na Android wymaganą przez
  * Foreground Service (FOREGROUND_SERVICE_MICROPHONE).
- * Na iOS audio session jest konfigurowany przez useWakeWord (expo-av).
+ * Na iOS audio session jest konfigurowany przez useWakeWord (expo-audio).
  * UWAGA: Pełny Foreground Service wymaga natywnego kodu — dostępny po Build #5 EAS.
  * Ten moduł przygotowuje integrację po stronie JS.
  */
@@ -41,7 +41,7 @@ class AndroidForegroundServiceManager implements ForegroundServiceManager {
 }
 
 class IOSBackgroundAudioManager implements ForegroundServiceManager {
-  // iOS: audio session skonfigurowany w useWakeWord przez expo-av
+  // iOS: audio session skonfigurowany w useWakeWord przez expo-audio
   async start(): Promise<void> { /* no-op — obsługa w useWakeWord */ }
   async stop(): Promise<void>  { /* no-op */ }
 }

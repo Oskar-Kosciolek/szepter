@@ -1,12 +1,14 @@
 /**
  * @module EnergyDetector
  * @description Tani detektor aktywności głosowej oparty o metering dBFS.
- * Używa expo-av Audio.Recording z meteringEnabled.
+ * Używa expo-audio AudioRecorder z meteringEnabled.
  * Gdy energia przekroczy próg przez 300ms → wywołuje onEnergyDetected.
  * Cel: filtrowanie ciszy przed kosztowną transkrypcją whisper.rn.
  */
 
-import { Audio } from 'expo-av'
+import { AudioQuality, RecordingOptions } from 'expo-audio'
+import type { AudioRecorder } from 'expo-audio'
+import AudioModule from 'expo-audio/build/AudioModule'
 import { useSettingsStore } from '../../store/settingsStore'
 
 const POLL_INTERVAL_MS = 500
@@ -14,10 +16,11 @@ const SUSTAINED_MS = 300  // czas utrzymania energii powyżej progu
 const WINDOW_SECONDS = 2  // długość okna nagrania przekazywanego do Whispera
 
 export class EnergyDetector {
-  private recording: Audio.Recording | null = null
   private pollTimer: ReturnType<typeof setInterval> | null = null
   private aboveThresholdSince: number | null = null
   private running = false
+  private recording = false
+  private recorder: AudioRecorder = new AudioModule.AudioRecorder({})
 
   /** Wywołany gdy energia utrzymuje się powyżej progu przez SUSTAINED_MS. */
   onEnergyDetected: ((uri: string) => void) | null = null
@@ -37,17 +40,9 @@ export class EnergyDetector {
   private async startCycle(): Promise<void> {
     if (!this.running) return
     try {
-      await Audio.setAudioModeAsync({
-        allowsRecordingInaBackground: true,
-        playsInSilentMode: true,
-      })
-      this.recording = new Audio.Recording()
-      // await this.recording.prepareToRecordAsync({
-      //   ...Audio.RecordingOptionsPresets.HIGH_QUALITY,
-      //   isMeteringEnabled: true,
-      // })
-      await this.recording.prepareToRecordAsync(this.getRecordingOptions())
-      await this.recording.startAsync()
+      this.recording = true;
+      await this.recorder.prepareToRecordAsync(this.getRecordingOptions())
+      await this.recorder.record()
       this.aboveThresholdSince = null
       this.startPoll()
     } catch (e) {
@@ -60,19 +55,19 @@ export class EnergyDetector {
     this.pollTimer = setInterval(async () => {
       if (!this.recording || !this.running) return
       try {
-        const status = await this.recording.getStatusAsync()
+        const status = await this.recorder.getStatus()
+        console.log(status)
         if (!status.isRecording) return
 
         const threshold = useSettingsStore.getState().voice.wakeWordThreshold
         const metering = status.metering ?? -160
-        // console.log('metering', metering/)
 
+        console.log(metering)
         if (metering > threshold) {
+          console.log('above threshold')
           if (this.aboveThresholdSince === null) {
-            console.log(new Date().toISOString(), 'metering start capture', metering);
             this.aboveThresholdSince = Date.now()
           } else if (Date.now() - this.aboveThresholdSince >= SUSTAINED_MS) {
-            console.log(new Date().toISOString(), 'metering end capture and emit', metering);
             // Energia utrzymana — nagraj okno i przekaż
             this.aboveThresholdSince = null
             await this.captureAndEmit()
@@ -94,14 +89,14 @@ export class EnergyDetector {
   private async captureAndEmit(): Promise<void> {
     this.clearPoll()
     const rec = this.recording
-    this.recording = null
+    this.recording = false
     if (!rec) return
 
     try {
       // Nagraj pełne okno zanim zatrzymasz
       await new Promise(resolve => setTimeout(resolve, WINDOW_SECONDS * 1000))
-      await rec.stopAndUnloadAsync()
-      const uri = rec.getURI()
+      await this.recorder.stop()
+      const uri = this.recorder.uri
       if (uri) this.onEnergyDetected?.(uri)
     } catch (e) {
       console.warn('[EnergyDetector] błąd zatrzymania:', e)
@@ -113,34 +108,31 @@ export class EnergyDetector {
 
   private async stopRecording(): Promise<void> {
     this.clearPoll()
+    if (!this.recording) return
+    this.recording = false
     try {
-      await this.recording?.stopAndUnloadAsync()
+      await this.recorder.stop()
     } catch { /* ignoruj — mogło być już zatrzymane */ }
-    this.recording = null
   }
 
-  private getRecordingOptions(): Audio.RecordingOptions {
-  return {
-    isMeteringEnabled: true,
-    android: {
+  private getRecordingOptions(): RecordingOptions {
+    return {
+      isMeteringEnabled: true,
       extension: '.wav',
-      outputFormat: Audio.AndroidOutputFormat.DEFAULT,
-      audioEncoder: Audio.AndroidAudioEncoder.DEFAULT,
       sampleRate: 16000,
       numberOfChannels: 1,
       bitRate: 256000,
-    },
-    ios: {
-      extension: '.wav',
-      audioQuality: Audio.IOSAudioQuality.HIGH,
-      sampleRate: 16000,
-      numberOfChannels: 1,
-      bitRate: 256000,
-      linearPCMBitDepth: 16,
-      linearPCMIsBigEndian: false,
-      linearPCMIsFloat: false,
-    },
-    web: {},
+      android: {
+        outputFormat: 'default',
+        audioEncoder: 'default',
+      },
+      ios: {
+        audioQuality: AudioQuality.HIGH,
+        linearPCMBitDepth: 16,
+        linearPCMIsBigEndian: false,
+        linearPCMIsFloat: false,
+      },
+      web: {},
+    }
   }
-}
 }
