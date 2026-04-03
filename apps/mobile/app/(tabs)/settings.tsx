@@ -5,7 +5,7 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import * as Speech from 'expo-speech'
-import { Audio } from 'expo-av'
+import { getRecordingPermissionsAsync } from 'expo-audio'
 import { useAuthStore } from '../../store/authStore'
 import { useSettingsStore, ReminderSettings, VoiceSettings } from '../../store/settingsStore'
 import { calendarService } from '../../services/calendar'
@@ -64,7 +64,7 @@ export default function SettingsScreen() {
     })
   }, [])
   useEffect(() => {
-    Audio.getPermissionsAsync().then(({ status }) => {
+    getRecordingPermissionsAsync().then(({ status }) => {
       setMicPermission(status === 'granted' ? 'granted' : status === 'denied' ? 'denied' : 'unknown')
     })
   }, [])
