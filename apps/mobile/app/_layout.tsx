@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { Stack, router } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { useAuthStore } from '../store/authStore'
@@ -9,9 +9,16 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { notificationService } from '../services/notifications'
 import { registerReminderTask } from '../tasks/reminderTask'
+import { initLocalDb } from '../lib/localDb'
+import { syncService } from '../services/sync/SyncService'
+import SyncIndicator from '../components/SyncIndicator'
+
+// Initialise SQLite once at module load (sync, before any render)
+initLocalDb()
 
 export default function RootLayout() {
   const { session, loading, fetchSession } = useAuthStore()
+  const didSeedRef = useRef(false)
 
   useEffect(() => { fetchSession() }, [])
 
@@ -23,7 +30,6 @@ export default function RootLayout() {
   useEffect(() => {
     // Obsługa deep linku gdy aplikacja jest już otwarta
     const sub = Linking.addEventListener('url', ({ url }) => {
-      supabase.auth.setSession
       const parsed = Linking.parse(url)
       if (parsed.queryParams?.access_token) {
         supabase.auth.setSession({
@@ -50,12 +56,20 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (loading) return
+
     if (session) {
+      // Full sync on login (seed na nowym urządzeniu obsługuje authStore)
+      if (!didSeedRef.current) {
+        didSeedRef.current = true
+        syncService.syncAll().catch(console.warn)
+      }
+
       AsyncStorage.getItem('onboarding_completed').then(done => {
         if (done) router.replace('/(tabs)')
         else router.replace('/onboarding')
       })
     } else {
+      didSeedRef.current = false
       router.replace('/login')
     }
   }, [session, loading])
@@ -71,7 +85,14 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <StatusBar style="light" />
-      <Stack screenOptions={{ headerShown: false }} />
+      <View style={{ flex: 1 }}>
+        <Stack screenOptions={{ headerShown: false }} />
+        {session && (
+          <View style={{ position: 'absolute', top: 52, right: 14 }}>
+            <SyncIndicator />
+          </View>
+        )}
+      </View>
     </GestureHandlerRootView>
   )
 }
