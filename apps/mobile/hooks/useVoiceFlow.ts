@@ -5,6 +5,7 @@ import { useCommand } from './useCommand'
 import { useWhisperStore } from '../store/whisperStore'
 import { useRecordingsStore } from '../store/recordingsStore'
 import { getErrorMessage } from '../utils/errors'
+import { removeWakeWord } from '../utils/fuzzyMatch'
 
 export function useVoiceFlow() {
   const [status, setStatus] = useState('Naciśnij aby mówić')
@@ -38,14 +39,15 @@ export function useVoiceFlow() {
 
       try {
         const transcript = await transcribe(uri)
-
+        
         if (transcript?.trim()) {
-          setStatus(`"${transcript}"`)
-          const result = await executeCommand(transcript)
+          const clearTransctipt = removeWakeWord(transcript)
+          setStatus(`"${clearTransctipt}"`)
+          const result = await executeCommand(clearTransctipt)
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
 
           await addRecording({
-            transcript: transcript.trim(),
+            transcript: clearTransctipt.trim(),
             command_type: null,
             command_payload: null,
             duration_seconds: Math.round(duration * 10) / 10,

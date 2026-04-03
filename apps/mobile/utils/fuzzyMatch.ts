@@ -42,3 +42,11 @@ export function containsWakeWord(transcript: string): boolean {
   const words = transcript.toLowerCase().split(/\s+/)
   return words.some(word => levenshtein(word, WAKE_WORD) <= 2)
 }
+
+export function removeWakeWord(transcript: string): string {
+  return transcript
+    .split(/\s+/)
+    .filter(word => !containsWakeWord(word.toLowerCase()))
+    .join(' ')
+    .trim()
+}
