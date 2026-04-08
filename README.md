@@ -104,10 +104,10 @@ packages/shared/
 - [x] SyncService: push/pull z Supabase (last-write-wins po serwerowym updated_at)
 - [x] useNetworkSync: auto-sync przy powrocie połączenia
 - [x] Seed przy pierwszym logowaniu (full pull z Supabase)
-- [ ] Monorepo: packages/shared/ (typy + klient Supabase)
-- [ ] apps/web/ — Vite + React + TypeScript
-- [ ] Logowanie OTP (to samo konto Supabase co mobile)
-- [ ] Podgląd notatek i list w przeglądarce (read-only)
+- [x] Monorepo: packages/shared/ (typy + klient Supabase)
+- [x] apps/web/ — Vite + React + TypeScript
+- [x] Logowanie OTP (to samo konto Supabase co mobile)
+- [x] Podgląd notatek i list w przeglądarce (read-only)
 
 ### ✏️ Milestone 6 — Web app: edycja
 - [ ] Tworzenie i edycja notatek/list w przeglądarce
