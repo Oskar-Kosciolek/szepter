@@ -10,6 +10,9 @@ Głosowy asystent do notatek i list. React Native + Expo + Supabase.
 - Groq LLaMA 3.1 (parser komend głosowych) + fallback regex
 - expo-speech (TTS, głos pl-pl-x-bmg-network)
 - Zustand (state management)
+- Vite + React + TypeScript (apps/web)
+- Turborepo (monorepo)
+- packages/shared (współdzielone typy i klient Supabase)
 
 ## Setup
 
@@ -31,6 +34,18 @@ apps/mobile/
 │   ├── commandParser/  ← parser komend (Strategy: LLM / Regex)
 │   └── tts/            ← TTS (Strategy: expo-speech / ElevenLabs)
 └── lib/              ← konfiguracja (Supabase)
+
+apps/web/
+├── src/app/        ← strony (React Router)
+├── src/components/ ← komponenty UI
+├── src/store/      ← Zustand
+├── src/hooks/
+└── src/lib/        ← import z packages/shared
+
+packages/shared/
+├── types/          ← Note, List, ListItem, SyncResult
+├── lib/            ← supabaseClient.ts
+└── SYNC_NOTES.md   ← dokumentacja długu technicznego sync
 ```
 
 ## Komendy głosowe
@@ -83,6 +98,7 @@ apps/mobile/
 - [x] Ustawienia (głos, język, czułość)
 - [x] Tryb cichy (TTS off gdy słuchawki)
 - [x] Historia nagrań
+
 ### 🔄 Milestone 4 — Offline sync + web app (fundament)
 - [x] expo-sqlite jako lokalna baza (offline-first)
 - [x] SyncService: push/pull z Supabase (last-write-wins po serwerowym updated_at)
@@ -92,8 +108,6 @@ apps/mobile/
 - [ ] apps/web/ — Vite + React + TypeScript
 - [ ] Logowanie OTP (to samo konto Supabase co mobile)
 - [ ] Podgląd notatek i list w przeglądarce (read-only)
-- [ ] Eksport notatek (markdown/PDF)
-- [ ] Tagi i wyszukiwanie głosowe
 
 ### ✏️ Milestone 6 — Web app: edycja
 - [ ] Tworzenie i edycja notatek/list w przeglądarce
