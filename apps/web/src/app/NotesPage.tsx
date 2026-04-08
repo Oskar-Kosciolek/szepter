@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useNotesStore } from '../store/notesStore'
+import { VoiceButton } from '../components/VoiceButton'
 import type { Note } from '@shared/types'
 
 // ─── Create form ────────────────────────────────────────────────────────────
@@ -139,6 +140,7 @@ export function NotesPage() {
       </header>
 
       <CreateNoteForm onCreate={createNote} />
+      <VoiceButton />
 
       {loading && <p className="empty">Ładowanie…</p>}
       {!loading && notes.length === 0 && <p className="empty">Brak notatek.</p>}

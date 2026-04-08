@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useListsStore, type ListWithItems } from '../store/listsStore'
+import { VoiceButton } from '../components/VoiceButton'
 import type { ListItem } from '@shared/types'
 
 // ─── Create list form ───────────────────────────────────────────────────────
@@ -178,6 +179,7 @@ export function ListsPage() {
       </header>
 
       <CreateListForm onCreate={createList} />
+      <VoiceButton />
 
       {loading && <p className="empty">Ładowanie…</p>}
       {!loading && lists.length === 0 && <p className="empty">Brak list.</p>}
