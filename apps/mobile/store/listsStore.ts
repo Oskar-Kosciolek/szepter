@@ -6,32 +6,9 @@ import {
   type LocalList, type LocalListItem,
 } from '../lib/localDb'
 import { syncService } from '../services/sync/SyncService'
+import type { List, ListItem, SyncState } from '@shared/types'
 
-export type ListItem = {
-  id: string
-  list_id: string
-  content: string
-  done: boolean
-  position: number
-  created_at: string
-  deadline?: string | null
-  is_recurring?: boolean
-  recurrence_rule?: string | null
-  google_event_id?: string | null
-}
-
-export type List = {
-  id: string
-  title: string
-  created_at: string
-  items?: ListItem[]
-}
-
-type SyncState = {
-  isSyncing: boolean
-  lastSync: Date | null
-  syncError: string | null
-}
+export type { List, ListItem }
 
 type ListsStore = {
   lists: List[]

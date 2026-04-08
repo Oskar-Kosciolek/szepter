@@ -5,24 +5,9 @@ import {
   type LocalNote,
 } from '../lib/localDb'
 import { syncService } from '../services/sync/SyncService'
+import type { Note, SyncState } from '@shared/types'
 
-export type Note = {
-  id: string
-  content: string
-  transcript: string | null
-  created_at: string
-  deadline?: string | null
-  notified?: boolean
-  is_recurring?: boolean
-  recurrence_rule?: string | null
-  google_event_id?: string | null
-}
-
-type SyncState = {
-  isSyncing: boolean
-  lastSync: Date | null
-  syncError: string | null
-}
+export type { Note }
 
 type NotesStore = {
   notes: Note[]

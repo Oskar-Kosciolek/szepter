@@ -9,22 +9,9 @@ import {
   saveListItem,
   type LocalNote, type LocalList, type LocalListItem,
 } from '../../lib/localDb'
+import type { SyncResult, SyncService } from '@shared/types'
 
-// ─── Types ──────────────────────────────────────────────────────────────────
-
-export interface SyncResult {
-  pushed: number
-  pulled: number
-  conflicts: number
-  errors: string[]
-}
-
-export interface SyncService {
-  syncAll(): Promise<SyncResult>
-  syncNotes(): Promise<SyncResult>
-  syncLists(): Promise<SyncResult>
-  syncListItems(): Promise<SyncResult>
-}
+export type { SyncResult, SyncService }
 
 // ─── AsyncStorage keys ──────────────────────────────────────────────────────
 

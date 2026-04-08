@@ -5,6 +5,9 @@
     "paths": {
       "@/*": [
         "./*"
+      ],
+      "@shared/*": [
+        "../../packages/shared/*"
       ]
     },
     "typeRoots": ["./types", "./node_modules/@types"]
