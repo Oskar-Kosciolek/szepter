@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useSupabaseSession } from '../hooks/useSupabaseSession'
+import { useRealtime } from '../hooks/useRealtime'
 import { LoginPage } from './LoginPage'
 import { VerifyPage } from './VerifyPage'
 import { NotesPage } from './NotesPage'
@@ -7,6 +8,7 @@ import { ListsPage } from './ListsPage'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { session, loading } = useSupabaseSession()
+  useRealtime()
   if (loading) return null
   if (!session) return <Navigate to="/login" replace />
   return <>{children}</>

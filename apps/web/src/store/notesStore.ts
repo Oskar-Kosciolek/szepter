@@ -6,9 +6,12 @@ type NotesStore = {
   notes: Note[]
   loading: boolean
   fetchNotes: () => Promise<void>
+  createNote: (content: string, deadline?: string) => Promise<void>
+  updateNote: (id: string, content: string) => Promise<void>
+  deleteNote: (id: string) => Promise<void>
 }
 
-export const useNotesStore = create<NotesStore>((set) => ({
+export const useNotesStore = create<NotesStore>((set, get) => ({
   notes: [],
   loading: false,
 
@@ -27,5 +30,44 @@ export const useNotesStore = create<NotesStore>((set) => ({
       set({ notes: data as Note[] })
     }
     set({ loading: false })
+  },
+
+  createNote: async (content: string, deadline?: string) => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    const { data, error } = await supabase
+      .from('notes')
+      .insert({
+        user_id: user.id,
+        content,
+        deadline: deadline ?? null,
+      })
+      .select('id, content, transcript, created_at, deadline, notified, is_recurring, recurrence_rule, google_event_id')
+      .single()
+
+    if (!error && data) {
+      set({ notes: [data as Note, ...get().notes] })
+    }
+  },
+
+  updateNote: async (id: string, content: string) => {
+    const { data, error } = await supabase
+      .from('notes')
+      .update({ content, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select('id, content, transcript, created_at, deadline, notified, is_recurring, recurrence_rule, google_event_id')
+      .single()
+
+    if (!error && data) {
+      set({ notes: get().notes.map(n => n.id === id ? data as Note : n) })
+    }
+  },
+
+  deleteNote: async (id: string) => {
+    const { error } = await supabase.from('notes').delete().eq('id', id)
+    if (!error) {
+      set({ notes: get().notes.filter(n => n.id !== id) })
+    }
   },
 }))
